@@ -1,0 +1,9 @@
+# With --inpEps 1., this is the tridiagonal matrix (8x8) with 4. on the diagonal and -1. elsewhere.
+
+0 1 - 4. -1. -1. 2.
+1 2
+2 3
+3 4
+4 5
+5 6
+6 7 - 2. -1. -1. 4.

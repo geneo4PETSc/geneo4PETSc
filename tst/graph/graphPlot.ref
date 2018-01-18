@@ -1,0 +1,14 @@
+Info: 16 file(s) named *size=10*.log
+Info: 16 file(s) named *size=5*.log
+Info: 2 surfaces to plot (strong scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=bjacobi (strong scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=mg (strong scaling)
+Info: 2 surfaces to plot (weak scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=bjacobi (weak scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=mg (weak scaling)
+Info: 16 file(s) named *size=10*.log
+Info: 16 file(s) named *size=5*.log
+Info: 1 surfaces to plot (strong scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=bjacobi (strong scaling)
+Info: 1 surfaces to plot (weak scaling)
+Info:   => plotting surface metis=dual-overlap=0-ksp=gmres-pc=bjacobi (weak scaling)

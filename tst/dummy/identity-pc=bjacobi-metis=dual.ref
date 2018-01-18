@@ -1,0 +1,40 @@
+The matrix A is:
+Mat Object: 2 MPI processes
+  type: mpiaij
+row 0: (0, 1.) 
+row 1: (1, 1.) 
+row 2: (2, 1.) 
+row 3: (3, 1.) 
+row 4: (4, 1.) 
+row 5: (5, 1.) 
+row 6: (6, 1.) 
+row 7: (7, 1.) 
+
+The vector B is:
+Vec Object: 2 MPI processes
+  type: mpi
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+
+The solution X is:
+Vec Object: 2 MPI processes
+  type: mpi
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+
+INFO: nb DOFs 8, nb elements 7, nnz coefs 23, nb partitions 2, overlap 0, metis dual
+INFO: gmres ksp, eps rel 1.0e-12, eps abs 1.0e-12, max iterations 10000
+INFO: bjacobi pc
+INFO: solve - converged
