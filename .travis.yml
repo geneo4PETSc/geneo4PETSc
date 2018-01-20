@@ -141,7 +141,7 @@ script:
   # build and test.
   - mkdir BUILD
   - pushd BUILD
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -pedantic-errors" ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -pedantic-errors --coverage" ..
   - make VERBOSE=1
   - make checkv
   - popd
@@ -154,3 +154,10 @@ after_failure:
   - if [[ -f $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/configure.log ]]; then tail -n 75 $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/configure.log; fi
   - if [[ -f $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/make.log      ]]; then tail -n 75 $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/make.log;      fi
   - if [[ -f ./Testing/Temporary/LastTest.log ]]; then cat ./Testing/Temporary/LastTest.log; fi
+
+after_success:
+
+  # get coverage.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd src && pushd CMakeFiles && pushd geneo4PETSc.dir; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then gcov -s ../../../../src geneo4PETSc.cpp;                fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash <(curl -s https://codecov.io/bash);                fi
