@@ -76,6 +76,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal python-tk;                  fi
   - sudo pip install argparse numpy matplotlib
 
+  # code quality: install checkers.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cppcheck shellcheck; sudo pip install pylint; fi
+
 before_script:
 
   # start X server to enable matplotlib to create images.
@@ -83,6 +86,9 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh -e /etc/init.d/xvfb start; fi
 
 script:
+
+  # code quality.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./dev.sh; fi
 
   # compile openmpi (travis ones may be outdated even after upgrade).
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd $HOME;                                                                                     fi
