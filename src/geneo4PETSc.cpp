@@ -40,6 +40,9 @@
 #include <dlfcn.h> // dlopen, dlsym, dlclose.
 
 #include <petsc.h>
+#include <slepc.h>
+
+#include "geneo.hpp"
 
 #include "metis.h"
 
@@ -711,8 +714,8 @@ int fillALoc(unsigned int const & nbSubMatLoc,
   return 0;
 }
 
-PetscErrorCode createViewer(bool const & bin, bool const & mat, MPI_Comm const & comm, string const & baseName,
-                            PetscViewer & pcView) {
+PetscErrorCode createPetscViewer(bool const & bin, bool const & mat, MPI_Comm const & comm,
+                                 string const & baseName, PetscViewer & pcView) {
   if (bin) { // Binary.
     string fileName = baseName + ".bin";
     return PetscViewerBinaryOpen(comm, fileName.c_str(), FILE_MODE_WRITE, &pcView);
@@ -790,7 +793,7 @@ int createA(unsigned int const & nbDOFLoc, unsigned int const & nbSubMatLoc,
   if (opt.debug) {
     PetscViewer pcView;
     string debugFile = "debug.input.A.MatIS";
-    pcRC = createViewer(false, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView); // MatIS crashes on binary export...
+    pcRC = createPetscViewer(false, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView); // MatIS crashes on binary export...
     CHKERRQ(pcRC);
     pcRC = MatView(pcA, pcView);
     CHKERRQ(pcRC);
@@ -879,7 +882,7 @@ int createB(Mat const & pcA, Vec & pcB, options const & opt) {
   if (opt.debug) {
     PetscViewer pcView;
     string debugFile = "debug.input.B";
-    pcRC = createViewer(opt.debugBin, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView);
+    pcRC = createPetscViewer(opt.debugBin, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView);
     CHKERRQ(pcRC);
     pcRC = VecView(pcB, pcView);
     CHKERRQ(pcRC);
@@ -889,6 +892,8 @@ int createB(Mat const & pcA, Vec & pcB, options const & opt) {
 
   return 0;
 }
+
+#define SETERRABT(msg) SETERRABORT(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,msg)
 
 int printIterativeGlobalSolveParameters(unsigned int const & nbDOF, unsigned int const & nbSubMat,
                                         unsigned int const & nbNonNullValLoc, bool const & metisDual,
@@ -916,11 +921,88 @@ int printIterativeGlobalSolveParameters(unsigned int const & nbDOF, unsigned int
   PCType pcPCType = NULL;
   pcRC = PCGetType(pcPC, &pcPCType);
   CHKERRQ(pcRC);
-  pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: %s pc\n", pcPCType);
-  CHKERRQ(pcRC);
-  if (!opt.shortRes) {
-    pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: setup - none\n");
+  if (pcPCType && string(pcPCType) == "geneo") {
+    // Get the context.
+
+    if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
+    geneoContext * gCtx = (geneoContext *) pcPC->data;
+    if (!gCtx) {cerr << "Error: shell preconditioner without context" << endl; return 1;}
+
+    // Print GenEO parameters.
+
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: %s pc", gCtx->name.c_str());
     CHKERRQ(pcRC);
+    if (gCtx->lvl1ORAS) {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", optim %.2f", gCtx->optim);
+      CHKERRQ(pcRC);
+    }
+    if (gCtx->effHybrid) {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", initial guess");
+      CHKERRQ(pcRC);
+    }
+    PC pcPCL1Loc;
+    pcRC = KSPGetPC(gCtx->pcKSPL1Loc, &pcPCL1Loc);
+    CHKERRQ(pcRC);
+    const MatSolverPackage pcPackage = NULL;
+    pcRC = PCFactorGetMatSolverPackage(pcPCL1Loc, &pcPackage);
+    CHKERRQ(pcRC);
+    if (pcPackage) {
+      string infoL1(pcPackage);
+      infoL1 += ((gCtx->hybrid) ? " proj-fine-space" : " no-proj-fine-space");
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", L1 %s", infoL1.c_str());
+      CHKERRQ(pcRC);
+    }
+    if (gCtx->lvl2) {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", tau %.2f", gCtx->tau);
+      CHKERRQ(pcRC);
+      if (gCtx->lvl2 >= 2) {
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", gamma %.2f", gCtx->gamma);
+        CHKERRQ(pcRC);
+      }
+      if (gCtx->offload) {
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", offload");
+        CHKERRQ(pcRC);
+      }
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", L2 %s\n", gCtx->infoL2.c_str());
+      CHKERRQ(pcRC);
+      if (!opt.shortRes) {
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: setup - ");
+        CHKERRQ(pcRC);
+        int estimDimE = 0, estimDimEMin = 0, estimDimEMax = 0, realDimE = 0, realDimEMin = 0, realDimEMax = 0;
+        boost::mpi::reduce(petscWorld, gCtx->estimDimELoc, estimDimE, plus<int>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->estimDimELoc, estimDimEMin, boost::mpi::minimum<int>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->estimDimELoc, estimDimEMax, boost::mpi::maximum<int>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->realDimELoc, realDimE, plus<int>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->realDimELoc, realDimEMin, boost::mpi::minimum<int>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->realDimELoc, realDimEMax, boost::mpi::maximum<int>(), 0);
+        int nicolaides = 0;
+        boost::mpi::reduce(petscWorld, gCtx->nicolaidesLoc, nicolaides, plus<int>(), 0);
+        if (!gCtx->noSyl) { // Use Sylvester's law.
+          pcRC = PetscPrintf(PETSC_COMM_WORLD, "estim dimE %i (local: min %i, max %i), ", estimDimE, estimDimEMin, estimDimEMax);
+          CHKERRQ(pcRC);
+        }
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", real dimE %i (local: min %i, max %i)", realDimE, realDimEMin, realDimEMax);
+        CHKERRQ(pcRC);
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", nicolaides %i\n", nicolaides);
+        CHKERRQ(pcRC);
+      }
+    }
+    else {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+      CHKERRQ(pcRC);
+      if (!opt.shortRes) {
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: setup - none\n");
+        CHKERRQ(pcRC);
+      }
+    }
+  }
+  else {
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: %s pc\n", pcPCType);
+    CHKERRQ(pcRC);
+    if (!opt.shortRes) {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "INFO: setup - none\n");
+      CHKERRQ(pcRC);
+    }
   }
   pcRC = PetscViewerFlush(PETSC_VIEWER_STDOUT_WORLD); // Flush to get readable outputs.
   CHKERRQ(pcRC);
@@ -928,7 +1010,7 @@ int printIterativeGlobalSolveParameters(unsigned int const & nbDOF, unsigned int
   return 0;
 }
 
-string getConvergedReason(KSPConvergedReason const & pcReason) {
+string getKSPConvergedReason(KSPConvergedReason const & pcReason) {
   string reason = "";
 
   /* converged */
@@ -974,7 +1056,7 @@ int printIterativeGlobalSolveResults(KSP const & pcKSP, Mat const & pcA, Vec con
     CHKERRQ(pcRC);
     return 0;
   }
-  info += " (" + getConvergedReason(pcReason) + ")";
+  info += " (" + getKSPConvergedReason(pcReason) + ")";
   pcRC = PetscPrintf(PETSC_COMM_WORLD, info.c_str());
   CHKERRQ(pcRC);
   PetscInt pcItNb = 0;
@@ -1012,7 +1094,7 @@ int printIterativeGlobalSolveResults(KSP const & pcKSP, Mat const & pcA, Vec con
   return ((pcReason >= 0) ? 0 : 1);
 }
 
-int printIterativeGlobalSolveTiming(bool const & timing,
+int printIterativeGlobalSolveTiming(bool const & timing, PC const & pcPC,
                                     double const & readInpTime, double const & partDecompTime,
                                     double const & createATime, double const & kspSetUpTime, double const & kspItsTime) {
   if (!timing) return 0;
@@ -1031,6 +1113,119 @@ int printIterativeGlobalSolveTiming(bool const & timing,
   CHKERRQ(pcRC);
   pcRC = PetscViewerFlush(PETSC_VIEWER_STDOUT_WORLD); // Flush to get readable outputs.
   CHKERRQ(pcRC);
+  PCType pcPCType = NULL;
+  pcRC = PCGetType(pcPC, &pcPCType);
+  CHKERRQ(pcRC);
+  if (pcPCType && string(pcPCType) == "geneo") {
+    // Get the context.
+
+    if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
+    geneoContext * gCtx = (geneoContext *) pcPC->data;
+    if (!gCtx) {cerr << "Error: shell preconditioner without context" << endl; return 1;}
+
+    // Print GenEO timers.
+
+    boost::mpi::communicator petscWorld = boost::mpi::communicator(PETSC_COMM_WORLD, boost::mpi::comm_create_kind::comm_attach);
+    double lvl1SetupMinvTime = 0.;
+    boost::mpi::reduce(petscWorld, gCtx->lvl1SetupMinvTimeLoc, lvl1SetupMinvTime, boost::mpi::maximum<double>(), 0);
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L1       setup: Minv %.5f s\n", lvl1SetupMinvTime);
+    CHKERRQ(pcRC);
+    if (gCtx->lvl2) {
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L2       setup: ");
+      CHKERRQ(pcRC);
+      double lvl2SetupSylTime = 0., lvl2SetupEigTime = 0., lvl2SetupZTime = 0., lvl2SetupETime = 0.;
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupSylTimeLoc, lvl2SetupSylTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupEigTimeLoc, lvl2SetupEigTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupZTimeLoc,   lvl2SetupZTime,   boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupETimeLoc,   lvl2SetupETime,   boost::mpi::maximum<double>(), 0);
+      if (!gCtx->noSyl) { // Use Sylvester's law.
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "sylvester %.5f s, ", lvl2SetupSylTime);
+        CHKERRQ(pcRC);
+      }
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "eigen solve %.5f s", lvl2SetupEigTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", Z %.5f s", lvl2SetupZTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", E %.5f s", lvl2SetupETime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+      CHKERRQ(pcRC);
+
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L2 tau   setup: ");
+      CHKERRQ(pcRC);
+      double lvl2SetupTauLocTime = 0., lvl2SetupTauSylTime = 0., lvl2SetupTauEigTime = 0.;
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupTauLocTimeLoc, lvl2SetupTauLocTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupTauSylTimeLoc, lvl2SetupTauSylTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2SetupTauEigTimeLoc, lvl2SetupTauEigTime, boost::mpi::maximum<double>(), 0);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "tau   loc %.5f s", lvl2SetupTauLocTime);
+      CHKERRQ(pcRC);
+      if (!gCtx->noSyl) { // Use Sylvester's law.
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", sylvester %.5f s", lvl2SetupTauSylTime);
+        CHKERRQ(pcRC);
+      }
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, ", eigen solve %.5f s", lvl2SetupTauEigTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+      CHKERRQ(pcRC);
+      if (gCtx->lvl2 >= 2) {
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L2 gamma setup: ");
+        CHKERRQ(pcRC);
+        double lvl2SetupGammaLocTime = 0., lvl2SetupGammaSylTime = 0., lvl2SetupGammaEigTime = 0.;
+        boost::mpi::reduce(petscWorld, gCtx->lvl2SetupGammaLocTimeLoc, lvl2SetupGammaLocTime, boost::mpi::maximum<double>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->lvl2SetupGammaSylTimeLoc, lvl2SetupGammaSylTime, boost::mpi::maximum<double>(), 0);
+        boost::mpi::reduce(petscWorld, gCtx->lvl2SetupGammaEigTimeLoc, lvl2SetupGammaEigTime, boost::mpi::maximum<double>(), 0);
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "gamma loc %.5f s", lvl2SetupGammaLocTime);
+        CHKERRQ(pcRC);
+        if (!gCtx->noSyl) { // Use Sylvester's law.
+          pcRC = PetscPrintf(PETSC_COMM_WORLD, ", sylvester %.5f s", lvl2SetupGammaSylTime);
+          CHKERRQ(pcRC);
+        }
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, ", eigen solve %.5f s", lvl2SetupGammaEigTime);
+        CHKERRQ(pcRC);
+        pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+        CHKERRQ(pcRC);
+      }
+    }
+    double lvl1ApplyTime = 0., lvl1ApplyScatterTime = 0., lvl1ApplyMinvTime = 0., lvl1ApplyGatherTime = 0.;
+    boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyTimeLoc,        lvl1ApplyTime,        boost::mpi::maximum<double>(), 0);
+    boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyScatterTimeLoc, lvl1ApplyScatterTime, boost::mpi::maximum<double>(), 0);
+    boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyMinvTimeLoc,    lvl1ApplyMinvTime,    boost::mpi::maximum<double>(), 0);
+    boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyGatherTimeLoc,  lvl1ApplyGatherTime,  boost::mpi::maximum<double>(), 0);
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L1       solve: apply %.5f s - ", lvl1ApplyTime);
+    CHKERRQ(pcRC);
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "scatter %.5f s, Minv %.5f s, gather %.5f s", lvl1ApplyScatterTime, lvl1ApplyMinvTime, lvl1ApplyGatherTime);
+    CHKERRQ(pcRC);
+    pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+    CHKERRQ(pcRC);
+    if (gCtx->hybrid) {
+      double lvl1ApplyPrjFSTime = 0., lvl1ApplyPrjFSZtTime = 0., lvl1ApplyPrjFSEinvTime = 0., lvl1ApplyPrjFSZTime = 0.;
+      boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyPrjFSTimeLoc,     lvl1ApplyPrjFSTime,     boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyPrjFSZtTimeLoc,   lvl1ApplyPrjFSZtTime,   boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyPrjFSEinvTimeLoc, lvl1ApplyPrjFSEinvTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl1ApplyPrjFSZTimeLoc,    lvl1ApplyPrjFSZTime,    boost::mpi::maximum<double>(), 0);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L1       solve: prjFS %.5f s - ", lvl1ApplyPrjFSTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "Zt %.5f s, Einv %.5f s, Z %.5f s", lvl1ApplyPrjFSZtTime, lvl1ApplyPrjFSEinvTime, lvl1ApplyPrjFSZTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+      CHKERRQ(pcRC);
+    }
+    if (gCtx->lvl2) {
+      double lvl2ApplyTime = 0., lvl2ApplyZtTime = 0., lvl2ApplyEinvTime = 0., lvl2ApplyZTime = 0.;
+      boost::mpi::reduce(petscWorld, gCtx->lvl2ApplyTimeLoc,     lvl2ApplyTime,     boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2ApplyZtTimeLoc,   lvl2ApplyZtTime,   boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2ApplyEinvTimeLoc, lvl2ApplyEinvTime, boost::mpi::maximum<double>(), 0);
+      boost::mpi::reduce(petscWorld, gCtx->lvl2ApplyZTimeLoc,    lvl2ApplyZTime,    boost::mpi::maximum<double>(), 0);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "      L2       solve: apply %.5f s - ", lvl2ApplyTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "Zt %.5f s, Einv %.5f s, Z %.5f s", lvl2ApplyZtTime, lvl2ApplyEinvTime, lvl2ApplyZTime);
+      CHKERRQ(pcRC);
+      pcRC = PetscPrintf(PETSC_COMM_WORLD, "\n");
+      CHKERRQ(pcRC);
+    }
+    pcRC = PetscViewerFlush(PETSC_VIEWER_STDOUT_WORLD); // Flush to get readable outputs.
+    CHKERRQ(pcRC);
+  }
 
   return 0;
 }
@@ -1064,7 +1259,7 @@ int iterativeGlobalSolve(KSP const & pcKSP, Mat const & pcA, Vec const & pcB, Ve
   if (opt.debug) {
     PetscViewer pcView;
     string debugFile = "debug.output.X";
-    pcRC = createViewer(opt.debugBin, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView);
+    pcRC = createPetscViewer(opt.debugBin, opt.debugMat, PETSC_COMM_WORLD, debugFile, pcView);
     CHKERRQ(pcRC);
     pcRC = VecView(pcX, pcView);
     CHKERRQ(pcRC);
@@ -1079,7 +1274,7 @@ int iterativeGlobalSolve(KSP const & pcKSP, Mat const & pcA, Vec const & pcB, Ve
   rc = printIterativeGlobalSolveResults(pcKSP, pcA, pcX, pcB, opt.shortRes);
   if (rc != 0) {cerr << "Error: print iterative global solve results KO" << endl; return 1;}
   auto kspItsTime = chrono::duration_cast<chrono::milliseconds>(stop - start).count()/1000.;
-  rc = printIterativeGlobalSolveTiming(opt.timing, readInpTime, partDecompTime, createATime, kspSetUpTime, kspItsTime);
+  rc = printIterativeGlobalSolveTiming(opt.timing, pcPC, readInpTime, partDecompTime, createATime, kspSetUpTime, kspItsTime);
   if (rc != 0) {cerr << "Error: print iterative global solve timing KO" << endl; return 1;}
 
   return 0;
@@ -1089,7 +1284,8 @@ int solve(unsigned int const & nbDOF, unsigned int const & nbSubMat,
           unsigned int const & nbDOFLoc, unsigned int const & nbSubMatLoc,
           vector<unsigned int> const & subMatPtrLoc, vector<unsigned int> const & subMatIdxLoc,
           vector<vector<PetscScalar>> const & subMatLoc,
-          set<unsigned int> const & dofIdxDomLoc,
+          set<unsigned int> const & dofIdxDomLoc, vector<unsigned int> const & dofIdxMultLoc,
+          vector<vector<unsigned int>> const & intersectLoc,
           options const & opt, double const & readInpTime, double const & partDecompTime) {
   // Create local to global mapping.
 
@@ -1134,11 +1330,22 @@ int solve(unsigned int const & nbDOF, unsigned int const & nbSubMat,
   CHKERRQ(pcRC);
   pcRC = KSPSetOptionsPrefix(pcKSP, "igs_");
   CHKERRQ(pcRC);
+  pcRC = PCRegister("geneo", createGenEOPC);
+  CHKERRQ(pcRC);
   PC pcPC;
   pcRC = KSPGetPC(pcKSP, &pcPC);
   CHKERRQ(pcRC);
   pcRC = PCSetFromOptions(pcPC); // Just before setup to override default options.
   CHKERRQ(pcRC);
+  PCType pcPCType = NULL;
+  pcRC = PCGetType(pcPC, &pcPCType);
+  CHKERRQ(pcRC);
+  if (pcPCType && string(pcPCType) == "geneo") {
+    pcRC = initGenEOPC(pcPC, nbDOF, nbDOFLoc, pcMap, pcA, pcB, pcX, &dofIdxDomLoc, &dofIdxMultLoc, &intersectLoc);
+    CHKERRQ(pcRC);
+    pcRC = KSPSetInitialGuessNonzero(pcKSP, PETSC_TRUE);
+    CHKERRQ(pcRC);
+  }
 
   // Set up solver and solve.
 
@@ -1206,6 +1413,12 @@ int checkArguments(int argc, char ** argv, options & opt) {
       char const * help = "-help"; argv[a] = (char *) help; // Replace -phelp with -help
       PetscInitialize(&argc, &argv, NULL, ""); // Pass -help to PETSc.
       PetscFinalize();
+      return -1;
+    }
+    if (clo == "-shelp") {
+      char const * help = "-help"; argv[a] = (char *) help; // Replace -shelp with -help
+      SlepcInitialize(&argc, &argv, NULL, ""); // Pass -help to SLEPc.
+      SlepcFinalize();
       return -1;
     }
     if (clo == "--help") return 1;
@@ -1296,6 +1509,7 @@ void usage() {
   cerr << "usage: geneo4PETSc is an implementation of the GenEO preconditioner with PETSc and SLEPc" << endl;
   cerr << "" << endl;
   cerr << "  -phelp,         print help related to PETSc" << endl;
+  cerr << "  -shelp,         print help related to SLEPc" << endl;
   cerr << "  --help,         print help related to geneo4PETSc" << endl;
   cerr << "  --inpFileA F,   input file F describing the A matrix (mandatory)" << endl;
   cerr << "                  - a unique ID (number) is attributed to each degree of freedom of the problem (described by A)" << endl;
@@ -1361,6 +1575,7 @@ void usage() {
   cerr << "  --timing,       print timing" << endl;
   cerr << "  --shortRes,     print short result status (makes output stable for test suite checks)" << endl;
   cerr << "  --cmdLine,      print command line at the end of the log" << endl;
+  cerr << usageGenEO(false);
 }
 
 int main(int argc, char ** argv) {
@@ -1399,9 +1614,11 @@ int main(int argc, char ** argv) {
 
   PetscErrorCode pcRC = PetscInitialize(&argc, &argv, NULL, "");
   CHKERRQ(pcRC);
+  pcRC = SlepcInitialize(&argc, &argv, NULL, "");
+  CHKERRQ(pcRC);
 
   rc = solve(nbNode, nbElem, nbNodeLoc, nbElemLoc,
-             elemPtrLoc, elemIdxLoc, elemSubMatLoc, nodeIdxDomLoc,
+             elemPtrLoc, elemIdxLoc, elemSubMatLoc, nodeIdxDomLoc, nodeIdxMultLoc, intersectLoc,
              opt, readInpTime, partDecompTime);
   if (rc != 0) {cerr << "Error: solve KO" << endl; return MPI_Abort(MPI_COMM_WORLD, 1);}
 
@@ -1418,6 +1635,8 @@ int main(int argc, char ** argv) {
     CHKERRQ(pcRC);
   }
 
+  pcRC = SlepcFinalize();
+  CHKERRQ(pcRC);
   pcRC = PetscFinalize();
   CHKERRQ(pcRC);
 

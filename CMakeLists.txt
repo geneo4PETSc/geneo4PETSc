@@ -20,6 +20,8 @@ check_include_file_cxx_error(iomanip)
 check_include_file_cxx_error(chrono)
 check_include_file_cxx_error(algorithm)
 check_include_file_cxx_error(iterator)
+check_include_file_cxx_error(cmath)
+check_include_file_cxx_error(limits)
 
 find_path(DL_INCLUDE_DIRS NAMES dlfcn.h PATHS $ENV{DL_DIR} $ENV{CPATH} $ENV{C_INCLUDE_PATH} $ENV{CPLUS_INCLUDE_PATH} PATH_SUFFIXES include)
 if(NOT DL_INCLUDE_DIRS)
@@ -37,6 +39,7 @@ find_package(Boost REQUIRED COMPONENTS mpi serialization)
 
 find_package(PkgConfig REQUIRED) # Get pkg_check_modules.
 pkg_check_modules(PETSc REQUIRED PETSc>=3.8.3)
+pkg_check_modules(SLEPc REQUIRED SLEPc>=3.8.1)
 
 find_package(PythonInterp REQUIRED)
 
@@ -58,6 +61,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 # Add subdirectories.
 
 add_subdirectory(src)
+add_subdirectory(hdr)
 
 include(CTest)
 enable_testing()

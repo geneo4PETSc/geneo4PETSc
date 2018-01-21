@@ -9,8 +9,8 @@ Prerequisites:
    - Metis
    - MPI
    - Boost: Boost.MPI, Boost.Serialization
-   - PETSc
-   - SLEPc
+   - PETSc: configure --with-mpi=1 --download-mumps --download-scalapack ...
+   - SLEPc: configure --download-arpack ...
 2. test suite
    - python: argparse, numpy, matplotlib (for test suite)
    - diff (for test suite)

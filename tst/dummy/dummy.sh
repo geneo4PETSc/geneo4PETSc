@@ -5,7 +5,27 @@ echo "" # Add space for clarity.
 
 for f in "identity" "tridiag"
 do
-  for p in "-igs_pc_type#bjacobi"
+  for p in "-igs_pc_type#bjacobi"                                  \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,0"                   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,1"                   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,1##--addOverlap#1"   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,1##-geneo_offload"   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1"                  \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1#--addOverlap#1"   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1#-geneo_offload"   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1"                  \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1#--addOverlap#1"   \
+           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1#-geneo_offload"   \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,0"                 \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2"                 \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2##--addOverlap#1" \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2##-geneo_offload" \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2"                \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2#--addOverlap#1" \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2#-geneo_offload" \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2"                \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2#--addOverlap#1" \
+           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2#-geneo_offload"
   do
     l="log"
     if [[ "${p}" == *"identity"*   ]]; then l="mat"; fi
@@ -15,15 +35,21 @@ do
     do
       PC_CMD="${p//[#]/ }"
       PC_LOG="${p//[#]/}"; PC_LOG="${PC_LOG//-/}"; PC_LOG="${PC_LOG//,/}"
-      PC_LOG="${PC_LOG//igs_pc_type/}"
+      PC_LOG="${PC_LOG//igs_pc_type/}"; PC_LOG="${PC_LOG//addOverlap1/}"
+      PC_LOG="${PC_LOG//geneo_lvl/}"; PC_LOG="${PC_LOG//geneo_offload/}"
 
       OPT_LOG="${p//[#]/}"; OPT_LOG="${OPT_LOG//-/}"; OPT_LOG="${OPT_LOG//,/}"
+      OPT_LOG="${OPT_LOG//geneo_offload/offload}"; OPT_LOG="${OPT_LOG//addOverlap/overlap}"
       OPT_LOG="${OPT_LOG//igs_pc_type/}"
       OPT_LOG="${OPT_LOG//bjacobi/}"
+      OPT_LOG="${OPT_LOG//geneo_lvl/}"; OPT_LOG="${OPT_LOG//geneo/}"
+      OPT_LOG="${OPT_LOG//ASM0/}"; OPT_LOG="${OPT_LOG//ASM1/}"; OPT_LOG="${OPT_LOG//ASMH1/}"; OPT_LOG="${OPT_LOG//ASME1/}"
+      OPT_LOG="${OPT_LOG//SORAS0/}"; OPT_LOG="${OPT_LOG//SORAS2/}"; OPT_LOG="${OPT_LOG//SORASH2/}"; OPT_LOG="${OPT_LOG//SORASE2/}"
 
       M_LOG="${m//--metisDual/dual}"; M_LOG="${M_LOG//--metisNodal/nodal}"
 
       LOG="${f}-pc=${PC_LOG}-metis=${M_LOG}"
+      if [[ ! -z "${OPT_LOG}" ]]; then LOG="${LOG}-opt=${OPT_LOG}"; fi
 
       CMD="mpirun @MPIEXEC_PREFLAGS@ @MPIEXEC_NUMPROC_FLAG@ 2 @MPIEXEC_POSTFLAGS@" # Always use 2 processus to make sure log == ref.
       CMD="${CMD} @CMAKE_BINARY_DIR@/src/geneo4PETSc --inpFileA ${f}.inp"
