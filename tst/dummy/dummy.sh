@@ -54,8 +54,8 @@ do
       CMD="mpirun @MPIEXEC_PREFLAGS@ @MPIEXEC_NUMPROC_FLAG@ 2 @MPIEXEC_POSTFLAGS@" # Always use 2 processus to make sure log == ref.
       CMD="${CMD} @CMAKE_BINARY_DIR@/src/geneo4PETSc --inpFileA ${f}.inp"
       if [[ "${f}" == "identity" ]]; then CMD="${CMD} --inpFileB B.inp"; fi
-      if [[ "${f}" == "tridiag" ]]; then CMD="${CMD} --inpEps 1."; fi
-      CMD="${CMD} ${PC_CMD} --verbose 2 -geneo_chk log -geneo_dbg ${l},2 --shortRes"
+      if [[ "${f}" == "tridiag" ]]; then CMD="${CMD} --inpEps 1. -geneo_cut 10"; fi # Add (useless !) -geneo_cut for coverage.
+      CMD="${CMD} ${PC_CMD} --debug ${l} --verbose 2 -geneo_chk log -geneo_dbg ${l},2 --shortRes"
       CMD="${CMD} -igs_ksp_atol 1.e-12 -igs_ksp_rtol 1.e-12" # Use tolerance to make "make test" as stable as possible.
       CMD="${CMD} -options_left no" # Get rid of unused option warnings with options_left (get clean logs).
       CMD="${CMD} ${m}"
