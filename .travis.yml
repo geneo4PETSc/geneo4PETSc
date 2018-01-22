@@ -121,8 +121,8 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export BOOST_ROOT="/usr";                                                                        fi
 
   # build and install petsc (configure is done with sudo as it installs packages like mumps, ...).
-  - pushd $HOME
-  - git clone https://bitbucket.org/petsc/petsc
+  - pushd $HOME; ls -al; ls -al petsc
+  - if [[ ! -d petsc/.git ]]; then rm -fr petsc; git clone https://bitbucket.org/petsc/petsc; fi
   - pushd petsc
   - git checkout master
   - git pull origin master
@@ -135,8 +135,8 @@ script:
   - popd
 
   # build and install slepc (configure is done with sudo as it installs packages like mumps, ...).
-  - pushd $HOME
-  - git clone https://bitbucket.org/slepc/slepc
+  - pushd $HOME; ls -al; ls -al slepc
+  - if [[ ! -d slepc/.git ]]; then rm -fr slepc; git clone https://bitbucket.org/slepc/slepc; fi
   - pushd slepc
   - git checkout master
   - git pull origin master
@@ -169,6 +169,12 @@ cache:
     # cache build directories: speed-up build future validations.
     - $HOME/openmpi-1.8.5
     - $HOME/boost_1_61_0
+    - $HOME/petsc
+    - $HOME/slepc
+
+before_cache:
+
+  - ls $HOME/petsc/arch*/lib/petsc/conf/pkg.*; sudo rm -f $HOME/petsc/arch*/lib/petsc/conf/pkg.* # Remove to force reconfigure if petsc is cached.
 
 after_failure:
 
