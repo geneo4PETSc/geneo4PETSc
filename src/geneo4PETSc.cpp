@@ -1409,18 +1409,6 @@ int checkArguments(int argc, char ** argv, options & opt) {
 
   for (int a = 0; argv && a < argc; a++) {
     string clo = argv[a]; // Command line option
-    if (clo == "-phelp") {
-      char const * help = "-help"; argv[a] = (char *) help; // Replace -phelp with -help
-      PetscInitialize(&argc, &argv, NULL, ""); // Pass -help to PETSc.
-      PetscFinalize();
-      return -1;
-    }
-    if (clo == "-shelp") {
-      char const * help = "-help"; argv[a] = (char *) help; // Replace -shelp with -help
-      SlepcInitialize(&argc, &argv, NULL, ""); // Pass -help to SLEPc.
-      SlepcFinalize();
-      return -1;
-    }
     if (clo == "--help") return 1;
     if (clo == "--inpFileA") {
       a++; if (a >= argc) {cerr << "Error: invalid command line, " << clo << endl; return 1;}
@@ -1508,8 +1496,6 @@ void usage() {
   cerr << endl;
   cerr << "usage: geneo4PETSc is an implementation of the GenEO preconditioner with PETSc and SLEPc" << endl;
   cerr << "" << endl;
-  cerr << "  -phelp,         print help related to PETSc" << endl;
-  cerr << "  -shelp,         print help related to SLEPc" << endl;
   cerr << "  --help,         print help related to geneo4PETSc" << endl;
   cerr << "  --inpFileA F,   input file F describing the A matrix (mandatory)" << endl;
   cerr << "                  - a unique ID (number) is attributed to each degree of freedom of the problem (described by A)" << endl;
