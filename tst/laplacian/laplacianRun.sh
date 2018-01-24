@@ -129,7 +129,8 @@ do
                 w="${n}" # Weak scaling.
               fi
 
-              INP="--inpLibA ./libgenlaplacian@CMAKE_SHARED_LIBRARY_SUFFIX@ --size#${s}#--weakScaling#${w}#--kappa#2.#lin#--debug#--inpEps#0.0001"
+              INP="--inpLibA ./@CMAKE_SHARED_LIBRARY_PREFIX@genlaplacian@CMAKE_SHARED_LIBRARY_SUFFIX@"
+              INP="${INP} --size#${s}#--weakScaling#${w}#--kappa#2.#lin#--debug#--inpEps#0.0001"
 
               EPS="-igs_ksp_atol ${t} -igs_ksp_rtol ${t}";
               if [[ "${p}" == *"geneo"*"1"* ]] || [[ "${p}" == *"geneo"*"2"* ]]; then # GenEO-1, GenEO-2.
