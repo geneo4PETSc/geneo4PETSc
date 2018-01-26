@@ -1328,8 +1328,6 @@ int solve(unsigned int const & nbDOF, unsigned int const & nbSubMat,
   KSP pcKSP;
   pcRC = KSPCreate(PETSC_COMM_WORLD, &pcKSP); // Global solve (shared by all MPI proc).
   CHKERRQ(pcRC);
-  pcRC = KSPSetOptionsPrefix(pcKSP, "igs_");
-  CHKERRQ(pcRC);
   pcRC = PCRegister("geneo", createGenEOPC);
   CHKERRQ(pcRC);
   PC pcPC;
