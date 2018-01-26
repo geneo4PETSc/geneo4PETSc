@@ -2273,7 +2273,6 @@ string usageGenEO(bool const petscPrintf) {
   msg << "                   L2 =    H2 =           hybrid GenEO-2 (1st level [proj. fine space] +  2d level [coarse space])" << endl;
   msg << "                   L2 =    E2 = efficient hybrid GenEO-2 (initial guess [coarse space] + 1st level [proj. fine space])" << endl;
   msg << "                   you can pass arguments to PETSc / SLEPc solvers at the command line using prefix:" << endl;
-  msg << "                     -igs_  for iterative   global solve:           -igs_ksp_atol 1.e-06 -igs_ksp_rtol 1.e-06" << endl;
   msg << "                     -dls1_ for      direct  local solve (level 1): -dls1_pc_factor_mat_solver_package mumps" << endl;
   msg << "                     -syl2_ for   sylvester  local solve (level 2): -syl2_ksp_view" << endl;
   msg << "                     -els2_ for       eigen  local solve (level 2): -els2_eps_max_it 100 -els2_eps_type arnoldi" << endl;
@@ -2293,6 +2292,9 @@ string usageGenEO(bool const petscPrintf) {
   msg << "  -geneo_no_syl    do not use Sylvester's law (inertia) to estimate the number of eigen values used to build Z" << endl;
   msg << "                   in case the eigen solver handles this estimation (krylovschur), you don't need to do it" << endl;
   msg << "  -geneo_offload   offload Z and E at master side (gather inputs, local solve, scatter outputs)" << endl;
+  msg << "" << endl;
+  msg << "In case a problem occurs, the following options may help:" << endl;
+  msg << "" << endl;
   msg << "  -geneo_dbg F,D   create debug files" << endl;
   msg << "                   F = log (ASCII file), bin (binary file) or mat (matlab file)" << endl;
   msg << "                   D = 1: timing and residual" << endl;
@@ -2317,8 +2319,6 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
   // Check arguments.
 
   PetscErrorCode pcRC = PetscOptionsHead(PetscOptionsObject, "GenEO options");
-  CHKERRQ(pcRC);
-  pcRC = PetscOptionsBegin(PETSC_COMM_WORLD, NULL, "GenEO options", "GenEO options");
   CHKERRQ(pcRC);
 
   PetscBool pcHasOpt = PETSC_FALSE;
@@ -2461,8 +2461,6 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
     gCtx->check = true;
   }
 
-  pcRC = PetscOptionsEnd();
-  CHKERRQ(pcRC);
   pcRC = PetscOptionsTail();
   CHKERRQ(pcRC);
 

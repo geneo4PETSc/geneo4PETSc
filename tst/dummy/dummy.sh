@@ -5,27 +5,27 @@ echo "" # Add space for clarity.
 
 for f in "identity" "tridiag"
 do
-  for p in "-igs_pc_type#bjacobi"                                  \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,0"                   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,1"                   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,1##--addOverlap#1"   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,1##-geneo_offload"   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1"                  \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1#--addOverlap#1"   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,H1#-geneo_offload"   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1"                  \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1#--addOverlap#1"   \
-           "-igs_pc_type#geneo#-geneo_lvl#ASM,E1#-geneo_offload"   \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,0"                 \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2"                 \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2##--addOverlap#1" \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,2##-geneo_offload" \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2"                \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2#--addOverlap#1" \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,H2#-geneo_offload" \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2"                \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2#--addOverlap#1" \
-           "-igs_pc_type#geneo#-geneo_lvl#SORAS,E2#-geneo_offload"
+  for p in "-pc_type#bjacobi"                                  \
+           "-pc_type#geneo#-geneo_lvl#ASM,0"                   \
+           "-pc_type#geneo#-geneo_lvl#ASM,1"                   \
+           "-pc_type#geneo#-geneo_lvl#ASM,1##--addOverlap#1"   \
+           "-pc_type#geneo#-geneo_lvl#ASM,1##-geneo_offload"   \
+           "-pc_type#geneo#-geneo_lvl#ASM,H1"                  \
+           "-pc_type#geneo#-geneo_lvl#ASM,H1#--addOverlap#1"   \
+           "-pc_type#geneo#-geneo_lvl#ASM,H1#-geneo_offload"   \
+           "-pc_type#geneo#-geneo_lvl#ASM,E1"                  \
+           "-pc_type#geneo#-geneo_lvl#ASM,E1#--addOverlap#1"   \
+           "-pc_type#geneo#-geneo_lvl#ASM,E1#-geneo_offload"   \
+           "-pc_type#geneo#-geneo_lvl#SORAS,0"                 \
+           "-pc_type#geneo#-geneo_lvl#SORAS,2"                 \
+           "-pc_type#geneo#-geneo_lvl#SORAS,2##--addOverlap#1" \
+           "-pc_type#geneo#-geneo_lvl#SORAS,2##-geneo_offload" \
+           "-pc_type#geneo#-geneo_lvl#SORAS,H2"                \
+           "-pc_type#geneo#-geneo_lvl#SORAS,H2#--addOverlap#1" \
+           "-pc_type#geneo#-geneo_lvl#SORAS,H2#-geneo_offload" \
+           "-pc_type#geneo#-geneo_lvl#SORAS,E2"                \
+           "-pc_type#geneo#-geneo_lvl#SORAS,E2#--addOverlap#1" \
+           "-pc_type#geneo#-geneo_lvl#SORAS,E2#-geneo_offload"
   do
     l="log"
     if [[ "${p}" == *"identity"*   ]]; then l="mat"; fi
@@ -35,12 +35,12 @@ do
     do
       PC_CMD="${p//[#]/ }"
       PC_LOG="${p//[#]/}"; PC_LOG="${PC_LOG//-/}"; PC_LOG="${PC_LOG//,/}"
-      PC_LOG="${PC_LOG//igs_pc_type/}"; PC_LOG="${PC_LOG//addOverlap1/}"
+      PC_LOG="${PC_LOG//pc_type/}"; PC_LOG="${PC_LOG//addOverlap1/}"
       PC_LOG="${PC_LOG//geneo_lvl/}"; PC_LOG="${PC_LOG//geneo_offload/}"
 
       OPT_LOG="${p//[#]/}"; OPT_LOG="${OPT_LOG//-/}"; OPT_LOG="${OPT_LOG//,/}"
       OPT_LOG="${OPT_LOG//geneo_offload/offload}"; OPT_LOG="${OPT_LOG//addOverlap/overlap}"
-      OPT_LOG="${OPT_LOG//igs_pc_type/}"
+      OPT_LOG="${OPT_LOG//pc_type/}"
       OPT_LOG="${OPT_LOG//bjacobi/}"
       OPT_LOG="${OPT_LOG//geneo_lvl/}"; OPT_LOG="${OPT_LOG//geneo/}"
       OPT_LOG="${OPT_LOG//ASM0/}"; OPT_LOG="${OPT_LOG//ASM1/}"; OPT_LOG="${OPT_LOG//ASMH1/}"; OPT_LOG="${OPT_LOG//ASME1/}"
@@ -56,7 +56,7 @@ do
       if [[ "${f}" == "identity" ]]; then CMD="${CMD} --inpFileB B.inp"; fi
       if [[ "${f}" == "tridiag" ]]; then CMD="${CMD} --inpEps 1. -geneo_cut 10"; fi # Add (useless !) -geneo_cut for coverage.
       CMD="${CMD} ${PC_CMD} --debug ${l} --verbose 2 -geneo_chk log -geneo_dbg ${l},2 --shortRes"
-      CMD="${CMD} -igs_ksp_atol 1.e-12 -igs_ksp_rtol 1.e-12" # Use tolerance to make "make test" as stable as possible.
+      CMD="${CMD} -ksp_atol 1.e-12 -ksp_rtol 1.e-12" # Use tolerance to make "make test" as stable as possible.
       CMD="${CMD} -options_left no" # Get rid of unused option warnings with options_left (get clean logs).
       CMD="${CMD} ${m}"
       echo "$CMD" # Add command in the log: convienient to relaunch manually when problem occurs.
