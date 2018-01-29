@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eu
 
 # To run this, you need to configure PETSc this way:
 # ~> ./configure --with-mpi=1 --with-pthread=1 --download-f2cblaslapack=yes              \

@@ -1407,7 +1407,7 @@ int checkArguments(int argc, char ** argv, options & opt) {
 
   for (int a = 0; argv && a < argc; a++) {
     string clo = argv[a]; // Command line option
-    if (clo == "--help") return 1;
+    if (clo == "--help") return -1;
     if (clo == "--inpFileA") {
       a++; if (a >= argc) {cerr << "Error: invalid command line, " << clo << endl; return 1;}
       opt.inpFileA = argv[a];
@@ -1569,7 +1569,7 @@ int main(int argc, char ** argv) {
 
   options opt;
   int rc = checkArguments(argc, argv, opt);
-  if (rc != 0) {if (rc > 0) {usage(); cerr << "Error: check argument KO" << endl;} return 1;}
+  if (rc != 0) {usage(); return (rc == -1) ? 0 : 1;} // Return code 0 if asking for help.
 
   // Partition (done by the master, then, sent by master to slaves).
 

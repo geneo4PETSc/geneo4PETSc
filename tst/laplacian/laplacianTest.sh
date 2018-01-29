@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -eu
 
 RUN="$(./laplacianRun.sh strong)"
 echo "$RUN" # Print run output.
