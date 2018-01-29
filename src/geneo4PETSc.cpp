@@ -943,11 +943,11 @@ int printIterativeGlobalSolveParameters(unsigned int const & nbDOF, unsigned int
     PC pcPCL1Loc;
     pcRC = KSPGetPC(gCtx->pcKSPL1Loc, &pcPCL1Loc);
     CHKERRQ(pcRC);
-    const MatSolverPackage pcPackage = NULL;
-    pcRC = PCFactorGetMatSolverPackage(pcPCL1Loc, &pcPackage);
+    const MatSolverType pcType = NULL;
+    pcRC = PCFactorGetMatSolverType(pcPCL1Loc, &pcType);
     CHKERRQ(pcRC);
-    if (pcPackage) {
-      string infoL1(pcPackage);
+    if (pcType) {
+      string infoL1(pcType);
       infoL1 += ((gCtx->hybrid) ? " proj-fine-space" : " no-proj-fine-space");
       pcRC = PetscPrintf(PETSC_COMM_WORLD, ", L1 %s", infoL1.c_str());
       CHKERRQ(pcRC);

@@ -74,10 +74,10 @@ PetscErrorCode createViewer(bool const & bin, bool const & mat, MPI_Comm const &
 #define SETERRABT(msg) SETERRABORT(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,msg)
 
 PetscErrorCode tuneSolver(PC const & pcPC, Mat const & pcFactor, bool inertia = false) {
-  const MatSolverPackage pcPackage = NULL;
-  PetscErrorCode pcRC = PCFactorGetMatSolverPackage(pcPC, &pcPackage);
+  const MatSolverType pcType = NULL;
+  PetscErrorCode pcRC = PCFactorGetMatSolverType(pcPC, &pcType);
   CHKERRQ(pcRC);
-  if (pcPackage && string(pcPackage) == "mumps") {
+  if (pcType && string(pcType) == "mumps") {
     pcRC = MatMumpsSetIcntl(pcFactor, 24, 1); // Detection of null pivots (avoided if possible).
     CHKERRQ(pcRC);
     pcRC = MatMumpsSetCntl(pcFactor, 5, 1.e+20); // Fixing null pivots (when not possible to avoid them).
@@ -103,7 +103,7 @@ PetscErrorCode directLocalSolve(geneoContext const * const gCtx, KSP const & pcK
   CHKERRQ(pcRC);
   pcRC = PCSetType(pcPCLoc, PCLU); // Direct solve: preconditioner "of type LU" <=> direct solver.
   CHKERRQ(pcRC);
-  pcRC = PCFactorSetMatSolverPackage(pcPCLoc, "mumps");
+  pcRC = PCFactorSetMatSolverType(pcPCLoc, "mumps");
   CHKERRQ(pcRC);
   pcRC = KSPSetFromOptions(pcKSPLoc); // Just before setup to override default options.
   CHKERRQ(pcRC);
@@ -469,7 +469,7 @@ PetscErrorCode getInertia(bool const & localSolve, Mat const & pcM,
   CHKERRQ(pcRC);
   pcRC = PCSetType(pcPCLoc, PCCHOLESKY); // We know the problem is real symetric: it can be decomposed into LDLt.
   CHKERRQ(pcRC);
-  pcRC = PCFactorSetMatSolverPackage(pcPCLoc, "mumps");
+  pcRC = PCFactorSetMatSolverType(pcPCLoc, "mumps");
   CHKERRQ(pcRC);
   pcRC = KSPSetFromOptions(pcKSPLoc); // Just before setup to override default options.
   CHKERRQ(pcRC);
@@ -770,7 +770,7 @@ PetscErrorCode buildEigenSolver(EPS & scEPSLoc, char const * prefix, bool const 
   CHKERRQ(pcRC);
   pcRC = PCSetType(pcSTKSPPCLoc, PCLU); // Direct solve: preconditioner "of type LU" <=> direct solver.
   CHKERRQ(pcRC);
-  pcRC = PCFactorSetMatSolverPackage(pcSTKSPPCLoc, "mumps");
+  pcRC = PCFactorSetMatSolverType(pcSTKSPPCLoc, "mumps");
   CHKERRQ(pcRC);
 
   return 0;
@@ -1084,10 +1084,10 @@ PetscErrorCode createEEig(geneoContext * const gCtx, Mat const & pcA) {
   // Save information message about level 2 (to be printed in output).
 
   if (pcPCL2) {
-    const MatSolverPackage pcPackage = NULL;
-    pcRC = PCFactorGetMatSolverPackage(pcPCL2, &pcPackage);
+    const MatSolverType pcType = NULL;
+    pcRC = PCFactorGetMatSolverType(pcPCL2, &pcType);
     CHKERRQ(pcRC);
-    if (pcPackage) gCtx->infoL2 += " " + string(pcPackage);
+    if (pcType) gCtx->infoL2 += " " + string(pcType);
   }
 
   // Debug on demand.
