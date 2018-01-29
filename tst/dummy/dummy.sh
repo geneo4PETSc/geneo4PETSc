@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+rm -f -- *.log
+
 @CMAKE_BINARY_DIR@/src/geneo4PETSc --help # Help for coverage.
 echo "" # Add space for clarity.
 

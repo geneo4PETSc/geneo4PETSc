@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+rm -f -- *.log
+
 RUN="$(./laplacianRun.sh strong)"
 echo "$RUN" # Print run output.
 
