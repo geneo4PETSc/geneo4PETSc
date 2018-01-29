@@ -88,102 +88,47 @@ before_script:
 script:
 
   # code quality.
+  - pushd $TRAVIS_BUILD_DIR
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./dev.sh; fi
 
-  # compile openmpi (travis ones may be outdated even after upgrade).
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd $HOME;                                                                                     fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://www.open-mpi.org/software/ompi/v1.8/downloads/openmpi-1.8.5.tar.gz;                 fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tar -xf openmpi-1.8.5.tar.gz;                                                                    fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd openmpi-1.8.5;                                                                             fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./configure --prefix=/usr --with-devel-headers --enable-mpi-cxx --enable-mpi-fortran &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 20 make -j 2                                                             &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make install                                                                    &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd;                                                                                            fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH="/usr/bin:${PATH}";                                                                  fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH="/usr/lib:${LD_LIBRARY_PATH}";                                            fi
+  # compile openmpi and boost (travis ones may be outdated even after upgrade).
+  - pushd $TRAVIS_BUILD_DIR
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh openmpi; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh boost; fi
 
-  # compile boost (travis ones may be outdated even after upgrade).
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz;              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tar -xf boost_1_61_0.tar.gz;                                                                     fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pushd boost_1_61_0;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./bootstrap.sh --with-toolset=gcc --with-libraries=mpi,serialization --prefix=/usr   &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "using mpi ;" >> user-config.jam;                                                           fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 20 ./b2 --user-config=user-config.jam                                    &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ./b2 --user-config=user-config.jam install                                      &> tmp.out; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then tail -n 75 tmp.out;                                                                              fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd;                                                                                            fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then popd;                                                                                            fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export BOOST_ROOT="/usr";                                                                        fi
-
-  # build and install petsc (configure is done with sudo as it installs packages like mumps, ...).
-  - pushd $HOME; ls -al; ls -al petsc
-  - if [[ ! -d petsc/.git ]]; then rm -fr petsc; git clone https://bitbucket.org/petsc/petsc; fi
-  - pushd petsc
-  - git checkout master
-  - git pull origin master
-  - travis_wait 30 sudo ./configure --with-mpi=1 --with-fortran-bindings=0 --download-metis=yes --download-mumps=yes --download-scalapack=yes --prefix=/usr/local
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make PETSC_DIR=$PWD PETSC_ARCH=arch-linux2-c-debug     all; fi # Need sudo to build as it must be used at configure time.
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make PETSC_DIR=$PWD PETSC_ARCH=arch-linux2-c-debug install; fi
-  - export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
-  - export CMAKE_PREFIX_PATH="/usr/local:${CMAKE_PREFIX_PATH}"
-  - popd
-  - popd
-
-  # build and install slepc (configure is done with sudo as it installs packages like mumps, ...).
-  - pushd $HOME; ls -al; ls -al slepc
-  - if [[ ! -d slepc/.git ]]; then rm -fr slepc; git clone https://bitbucket.org/slepc/slepc; fi
-  - pushd slepc
-  - git checkout master
-  - git pull origin master
-  - export PETSC_DIR=/usr/local
-  - export SLEPC_DIR=$PWD
-  - travis_wait 20 sudo ./configure --download-arpack --prefix=/usr/local
-  - sudo make SLEPC_DIR=$PWD PETSC_DIR=/usr/local # Need sudo to build as it must be used at configure time.
-  - sudo make SLEPC_DIR=$PWD PETSC_DIR=/usr/local install
-  - export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
-  - export CMAKE_PREFIX_PATH="/usr/local:${CMAKE_PREFIX_PATH}"
-  - popd
-  - popd
-
-  # tweak cmake (travis one may be outdated even after upgrade).
-  - cmake --version
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sed -i 's/^cmake_minimum_required(VERSION 3.7)/cmake_minimum_required(VERSION 2.8)/' CMakeLists.txt; fi
+  # build and install petsc and slepc.
+  - pushd $TRAVIS_BUILD_DIR
+  - travis_wait 25 ./prq.sh petsc
+  - travis_wait 25 ./prq.sh slepc
+  - export PATH="$TRAVIS_BUILD_DIR/prq/local/bin:${PATH}"
+  - export LD_LIBRARY_PATH="$TRAVIS_BUILD_DIR/prq/local/lib:${LD_LIBRARY_PATH}"
+  - export PKG_CONFIG_PATH="$TRAVIS_BUILD_DIR/prq/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
+  - export CMAKE_PREFIX_PATH="$TRAVIS_BUILD_DIR/prq/local:${CMAKE_PREFIX_PATH}"
 
   # build and test.
-  - mkdir BUILD
-  - pushd BUILD
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -pedantic-errors --coverage" ..
+  - pushd $TRAVIS_BUILD_DIR
+  - mkdir BUILD; pushd BUILD
+  - cmake --version
+  - export BOOST_FLAGS="-Wno-expansion-to-defined" # Prevent boost errors.
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -pedantic-errors $BOOST_FLAGS --coverage" ..
   - make VERBOSE=1
-  - travis_wait 20 make checkv
-  - popd
+  - travis_wait 25 make checkv
 
 cache:
 
   directories:
 
     # cache build directories: speed-up build future validations.
-    - $HOME/openmpi-1.8.5
-    - $HOME/boost_1_61_0
-    - $HOME/petsc
-    - $HOME/slepc
-
-before_cache:
-
-  - ls $HOME/petsc/arch*/lib/petsc/conf/pkg.*; sudo rm -f $HOME/petsc/arch*/lib/petsc/conf/pkg.* # Remove to force reconfigure if petsc is cached.
+    - $TRAVIS_BUILD_DIR/prq
 
 after_failure:
 
   # show build error or test log to know what is wrong if errors occured.
-  - if [[ -f $HOME/petsc/configure.log ]]; then tail -n 75 $HOME/petsc/configure.log; fi
-  - if [[ -f $HOME/petsc/make.log      ]]; then tail -n 75 $HOME/petsc/make.log;      fi
-  - if [[ -f $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/configure.log ]]; then tail -n 75 $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/configure.log; fi
-  - if [[ -f $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/make.log      ]]; then tail -n 75 $HOME/slepc/installed-arch-linux2-c-debug/lib/slepc/conf/make.log;      fi
-  - if [[ -f ./Testing/Temporary/LastTest.log ]]; then cat ./Testing/Temporary/LastTest.log; fi
+  - if [[ -f $TRAVIS_BUILD_DIR/prq/petsc/configure.log ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/petsc/configure.log; fi
+  - if [[ -f $TRAVIS_BUILD_DIR/prq/petsc/make.log      ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/petsc/make.log;      fi
+  - if [[ -f $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/configure.log ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/configure.log; fi
+  - if [[ -f $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/make.log      ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/make.log;      fi
+  - if [[ -f $TRAVIS_BUILD_DIR/BUILD/Testing/Temporary/LastTest.log ]]; then cat $TRAVIS_BUILD_DIR/BUILD/Testing/Temporary/LastTest.log; fi
 
 after_success:
 

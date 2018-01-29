@@ -17,6 +17,9 @@ Prerequisites:
 
 Note: if not done by "module load", you need to export PKG_CONFIG_PATH/CMAKE_PREFIX_PATH (check the wiki).
 
+Note: prq.sh can help to build prerequisites (caution: export variables when script ends).  
+~/geneo4PETSc> ./prq.sh petsc slepc  
+
 Build and test:
 ===============
 
