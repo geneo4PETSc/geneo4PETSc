@@ -340,7 +340,7 @@ def plotSurfs(args, fig, scaling, surfs):
         nbRowPlot = 2
         if scaling == "weak":
             rowPlotID = 1 # Add a 2d line of plots
-    axis1, axis2 = None, None
+    axis1, axis2, axis3 = None, None, None
     if args.plot2D:
         axis1 = fig.add_subplot(nbRowPlot, 3, 1 + rowPlotID * 3)
         axis2 = fig.add_subplot(nbRowPlot, 3, 2 + rowPlotID * 3)
