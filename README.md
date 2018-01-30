@@ -15,7 +15,7 @@ Prerequisites:
    - python: argparse, numpy, matplotlib (for test suite)
    - diff (for test suite)
 
-Note: if not done by "module load", you need to export PKG_CONFIG_PATH/CMAKE_PREFIX_PATH (check the wiki).
+Note: if not done by "module load", you need to export PKG_CONFIG_PATH/CMAKE_PREFIX_PATH (check the doc/wiki).
 
 Note: prq.sh can help to build prerequisites (caution: export variables when script ends).  
 ~/geneo4PETSc> ./prq.sh petsc slepc  
@@ -28,14 +28,14 @@ Build and test:
 ~/geneo4PETSc> mkdir BUILD; cd BUILD  
 ~/geneo4PETSc/BUILD> cmake ..; make all checkv  
 
-Note: you need to check that all prerequisites are consistent unless link may break (check the wiki).
+Note: you need to check that all prerequisites are consistent unless link may break (check the doc/wiki).
 
 Usage:
 ======
 
 ~/geneo4PETSc/BUILD> ./src/geneo4PETSc --help
 
-Note: in case the solver diverges, check the wiki.
+Note: in case the solver diverges, check the doc/wiki.
 
 Examples:
 =========
