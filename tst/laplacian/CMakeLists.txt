@@ -1,6 +1,7 @@
 # Add test.
 
-add_library(genlaplacian SHARED laplacian.cpp)
+add_library(genlaplacian SHARED laplacianServices.cpp laplacian.cpp)
+target_include_directories(genlaplacian PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>) # Get laplacianServices.hpp
 set_target_properties(genlaplacian PROPERTIES CXX_STANDARD 11)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/laplacianTest.sh"  "${CMAKE_CURRENT_BINARY_DIR}/laplacianTest.sh"  @ONLY)
