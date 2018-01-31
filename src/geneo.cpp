@@ -74,7 +74,7 @@ PetscErrorCode createViewer(bool const & bin, bool const & mat, MPI_Comm const &
 #define SETERRABT(msg) SETERRABORT(PETSC_COMM_WORLD,PETSC_ERR_ARG_NULL,msg)
 
 PetscErrorCode tuneSolver(PC const & pcPC, Mat const & pcFactor, bool inertia = false) {
-  const MatSolverType pcType = NULL;
+  MatSolverType pcType = NULL;
   PetscErrorCode pcRC = PCFactorGetMatSolverType(pcPC, &pcType);
   CHKERRQ(pcRC);
   if (pcType && string(pcType) == "mumps") {
@@ -1084,7 +1084,7 @@ PetscErrorCode createEEig(geneoContext * const gCtx, Mat const & pcA) {
   // Save information message about level 2 (to be printed in output).
 
   if (pcPCL2) {
-    const MatSolverType pcType = NULL;
+    MatSolverType pcType = NULL;
     pcRC = PCFactorGetMatSolverType(pcPCL2, &pcType);
     CHKERRQ(pcRC);
     if (pcType) gCtx->infoL2 += " " + string(pcType);

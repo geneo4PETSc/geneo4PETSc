@@ -943,7 +943,7 @@ int printIterativeGlobalSolveParameters(unsigned int const & nbDOF, unsigned int
     PC pcPCL1Loc;
     pcRC = KSPGetPC(gCtx->pcKSPL1Loc, &pcPCL1Loc);
     CHKERRQ(pcRC);
-    const MatSolverType pcType = NULL;
+    MatSolverType pcType = NULL;
     pcRC = PCFactorGetMatSolverType(pcPCL1Loc, &pcType);
     CHKERRQ(pcRC);
     if (pcType) {
