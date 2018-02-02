@@ -72,16 +72,16 @@ if [ "$#" -ne 1 ]; then echo "ERROR: need argument strong or weak (scaling)."; e
 if [ "$1" != "strong" ] && [ "$1" != "weak" ] ; then echo "ERROR: need argument strong or weak (scaling)."; exit 1; fi
 
 if [ "$1" == "strong" ]; then
-  INP_SIZE_ARRAY=(${STRONG_INP_SIZE})
-  INP_LEVEL_ARRAY=(${STRONG_INP_LEVEL})
-  MPI_ARRAY=(${STRONG_MPI})
+  IFS=" " read -r -a INP_SIZE_ARRAY  <<< "${STRONG_INP_SIZE}"
+  IFS=" " read -r -a INP_LEVEL_ARRAY <<< "${STRONG_INP_LEVEL}"
+  IFS=" " read -r -a MPI_ARRAY       <<< "${STRONG_MPI}"
 else
-  INP_SIZE_ARRAY=(${WEAK_INP_SIZE})
-  INP_LEVEL_ARRAY=(${WEAK_INP_LEVEL})
-  MPI_ARRAY=(${WEAK_MPI})
+  IFS=" " read -r -a INP_SIZE_ARRAY  <<< "${WEAK_INP_SIZE}"
+  IFS=" " read -r -a INP_LEVEL_ARRAY <<< "${WEAK_INP_LEVEL}"
+  IFS=" " read -r -a MPI_ARRAY       <<< "${WEAK_MPI}"
 fi
-TOL_ARRAY=(${TOL})
-PC_ARRAY=(${PC})
+IFS=" " read -r -a TOL_ARRAY <<< "${TOL}"
+IFS=" " read -r -a PC_ARRAY  <<< "${PC}"
 
 # Run jobs.
 
