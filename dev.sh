@@ -8,7 +8,7 @@ cppcheck -v --std=c++11 --enable=all --suppress=cstyleCast --error-exitcode=1 --
 echo ""
 echo "Bash script check."
 echo ""
-shellcheck tst/*/*.sh
+shellcheck prq.sh tst/*/*.sh
 
 echo ""
 echo "Python script check."
