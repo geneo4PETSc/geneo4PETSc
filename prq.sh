@@ -1,5 +1,10 @@
 #!/bin/bash -eu
 
+function errorMsg {
+  if [[ "$?" -ne "0" ]]; then echo "ERROR: check prq/*/prq.*.log"; fi
+}
+trap 'errorMsg' EXIT
+
 export PRQ_DIR; PRQ_DIR="$(pwd)/prq"
 
 echo "This script is meant to help installing prerequistes."

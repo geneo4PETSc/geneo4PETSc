@@ -1,5 +1,10 @@
 #!/bin/bash -eu
 
+function errorMsg {
+  if [[ "$?" -ne "0" ]]; then echo "ERROR: check *.log"; fi
+}
+trap 'errorMsg' EXIT
+
 rm -f -- *.log
 
 @CMAKE_BINARY_DIR@/src/geneo4PETSc --help # Help for coverage.

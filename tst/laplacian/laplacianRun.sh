@@ -1,5 +1,10 @@
 #!/bin/bash -eu
 
+function errorMsg {
+  if [[ "$?" -ne "0" ]]; then echo "ERROR: check *.log"; fi
+}
+trap 'errorMsg' EXIT
+
 # To run this, you need to configure PETSc this way:
 # ~> ./configure --with-mpi=1 --with-pthread=1 --download-f2cblaslapack=yes              \
 #                --download-mumps=yes --download-scalapack=yes                           \
