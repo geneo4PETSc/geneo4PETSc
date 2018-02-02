@@ -37,13 +37,13 @@ do
     tar -xf openmpi-1.8.5.tar.gz
     pushd openmpi-1.8.5
 
-    echo -e "\nconfiguring..."
+    echo -e "\\nconfiguring..."
     ./configure --prefix="${PRQ_DIR}/local" --with-devel-headers --enable-mpi-cxx --enable-mpi-fortran &> prq.openmpi.configure.log
     tail -n 25 prq.openmpi.configure.log
-    echo -e "\nbuilding..."
+    echo -e "\\nbuilding..."
     make -j                                                                                            &> prq.openmpi.make.log
     tail -n 25 prq.openmpi.make.log
-    echo -e "\ninstalling..."
+    echo -e "\\ninstalling..."
     make install                                                                                       &> prq.openmpi.install.log
     tail -n 25 prq.openmpi.install.log
     popd
@@ -54,15 +54,15 @@ do
     tar -xf boost_1_61_0.tar.gz
     pushd boost_1_61_0
 
-    echo -e "\nbootstraping..."
+    echo -e "\\nbootstraping..."
     ./bootstrap.sh --prefix="${PRQ_DIR}/local" --with-libraries=mpi,serialization &> prq.boost.bootstrap.log
     tail -n 25 prq.boost.bootstrap.log
     cp -f project-config.jam user-config.jam
     echo "using mpi : ${PRQ_DIR}/local/bin/mpic++ ;" >> user-config.jam
-    echo -e "\nbuilding..."
+    echo -e "\\nbuilding..."
     ./b2 --user-config=user-config.jam                                            &> prq.boost.make.log
     tail -n 25 prq.boost.make.log
-    echo -e "\ninstalling..."
+    echo -e "\\ninstalling..."
     ./b2 --user-config=user-config.jam install                                    &> prq.boost.install.log
     tail -n 25 prq.boost.install.log
     popd
@@ -76,18 +76,18 @@ do
     export MPI_FLAGS=""
     if [[ -f "${PRQ_DIR}/local/bin/mpirun" ]]; then
       export MPI_FLAGS="--with-mpi-dir=${PRQ_DIR}/local";
-      echo -e "\nexport MPI_FLAGS=${MPI_FLAGS}"
+      echo -e "\\nexport MPI_FLAGS=${MPI_FLAGS}"
     fi
 
-    echo -e "\nconfiguring..."
+    echo -e "\\nconfiguring..."
     ./configure --prefix="${PRQ_DIR}/local" --PETSC_ARCH=arch \
                 --with-mpi=1 "${MPI_FLAGS}" --with-fortran-bindings=0 \
                 --download-metis=yes --download-mumps=yes --download-scalapack=yes &> prq.petsc.configure.log
     tail -n 25 prq.petsc.configure.log
-    echo -e "\nbuilding..."
+    echo -e "\\nbuilding..."
     make PETSC_DIR="$PWD" PETSC_ARCH=arch     all                                  &> prq.petsc.make.log
     tail -n 25 prq.petsc.make.log
-    echo -e "\ninstalling..."
+    echo -e "\\ninstalling..."
     make PETSC_DIR="$PWD" PETSC_ARCH=arch install                                  &> prq.petsc.install.log
     tail -n 25 prq.petsc.install.log
     popd
@@ -99,13 +99,13 @@ do
 
     export PETSC_DIR="${PRQ_DIR}/local"
     export SLEPC_DIR="$PWD"
-    echo -e "\nconfiguring..."
+    echo -e "\\nconfiguring..."
     ./configure --prefix="${PRQ_DIR}/local"  --download-arpack &> prq.slepc.configure.log
     tail -n 25 prq.slepc.configure.log
-    echo -e "\nbuilding..."
+    echo -e "\\nbuilding..."
     make SLEPC_DIR="$SLEPC_DIR" PETSC_DIR="$PETSC_DIR"     all &> prq.slepc.make.log
     tail -n 25 prq.slepc.make.log
-    echo -e "\ninstalling..."
+    echo -e "\\ninstalling..."
     make SLEPC_DIR="$SLEPC_DIR" PETSC_DIR="$PETSC_DIR" install &> prq.slepc.install.log
     tail -n 25 prq.slepc.install.log
     popd
