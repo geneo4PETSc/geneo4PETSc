@@ -1,0 +1,13 @@
+set(GENEO4PETSC_DEP_HDR "")
+foreach(hdr ${SLEPc_INCLUDE_DIRS} ${PETSc_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MPI_CXX_INCLUDE_PATH})
+  set(GENEO4PETSC_DEP_HDR "${GENEO4PETSC_DEP_HDR} -I${hdr}")
+endforeach(hdr)
+
+set(GENEO4PETSC_DEP_LIB "")
+foreach(lib ${SLEPc_LDFLAGS} ${PETSc_LDFLAGS} ${Boost_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  set(GENEO4PETSC_DEP_LIB "${GENEO4PETSC_DEP_LIB} ${lib}")
+endforeach(lib)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/geneo4PETSc.pc ${CMAKE_CURRENT_BINARY_DIR}/geneo4PETSc.pc)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/geneo4PETSc.pc DESTINATION lib/pkgconfig)

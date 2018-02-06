@@ -1,0 +1,9 @@
+prefix=${CMAKE_INSTALL_PREFIX}
+exec_prefix=${CMAKE_INSTALL_PREFIX}
+includedir=${CMAKE_INSTALL_PREFIX}/include
+libdir=${CMAKE_INSTALL_PREFIX}/lib
+
+Name: geneo4PETSc
+Description: implementation of the GenEO preconditioner with PETSc and SLEPc
+Cflags: -I${CMAKE_INSTALL_PREFIX}/include ${GENEO4PETSC_DEP_HDR}
+Libs: -L${CMAKE_INSTALL_PREFIX}/lib -lgeneopc ${GENEO4PETSC_DEP_LIB}
