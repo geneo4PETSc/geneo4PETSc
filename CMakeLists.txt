@@ -58,10 +58,16 @@ endforeach()
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-# Add subdirectories.
+# Add pc file.
+
+add_subdirectory(pkg)
+
+# Add source code.
 
 add_subdirectory(src)
 add_subdirectory(hdr)
+
+# Add tests.
 
 include(CTest)
 enable_testing()
