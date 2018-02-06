@@ -79,11 +79,13 @@ install:
   # packages: install from repositories.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++;                          fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libc++-dev;               fi
 # - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi # compiled, not installed.
 # - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi # compiled, not installed.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install liblapack-dev;                             fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake diffutils;                           fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake;                                     fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install autoconf automake;                         fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install diffutils findutils;                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libbz2-dev;                                fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal python-tk;                  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install git;                  fi
@@ -91,7 +93,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install openmpi;              fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install boost-mpi;            fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install lapack;               fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install cmake diffutils;      fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install cmake;                fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install autoconf automake;    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install diffutils findutils;  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install bzip2;                fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install python --with-tcl-tk; fi
   - sudo pip install --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
