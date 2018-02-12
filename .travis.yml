@@ -66,10 +66,10 @@ before_install:
 install:
 
   # OS: update, upgrade.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get remove postgresql-client*; fi # Remove: it breaks the ubuntu14-LTS upgrade...
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get                                                                 update;       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" upgrade;      fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" dist-upgrade; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo updatedb;                                                     fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    cask uninstall oclint;                                             fi # conflicts with gcc.
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    update;                                                            fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    upgrade;                                                           fi
