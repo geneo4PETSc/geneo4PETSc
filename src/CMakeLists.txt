@@ -6,6 +6,7 @@ add_executable(geneo4PETSc geneo4PETSc.cpp)
 set_target_properties(geneo4PETSc PROPERTIES CXX_STANDARD 11)
 install(TARGETS geneo4PETSc RUNTIME DESTINATION bin)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Before add_library, allow the archive to be included in a shared object.
 add_library(geneopc STATIC geneo.cpp)
 set_target_properties(geneopc PROPERTIES CXX_STANDARD 11)
 target_include_directories(geneopc PRIVATE "../hdr")
