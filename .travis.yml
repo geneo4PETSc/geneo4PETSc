@@ -154,10 +154,12 @@ cache:
 after_failure:
 
   # show build error or test log to know what is wrong if errors occured.
-  - if [[ -f $TRAVIS_BUILD_DIR/prq/petsc/configure.log ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/petsc/configure.log; fi
-  - if [[ -f $TRAVIS_BUILD_DIR/prq/petsc/make.log      ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/petsc/make.log;      fi
-  - if [[ -f $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/configure.log ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/configure.log; fi
-  - if [[ -f $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/make.log      ]]; then tail -n 75 $TRAVIS_BUILD_DIR/prq/slepc/installed-arch/lib/slepc/conf/make.log;      fi
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*mpi*/prq.*.log
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*boost*/prq.*.log
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*petsc*/prq.*.log
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*petsc*/*arch*/externalpackages/*/*.log
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*slepc*/prq.*.log
+  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*slepc*/*arch*/externalpackages/*/*.log
   - if [[ -f $TRAVIS_BUILD_DIR/BUILD/Testing/Temporary/LastTest.log ]]; then cat $TRAVIS_BUILD_DIR/BUILD/Testing/Temporary/LastTest.log; fi
 
 after_success:
