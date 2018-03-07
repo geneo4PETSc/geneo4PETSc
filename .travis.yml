@@ -78,6 +78,7 @@ install:
 
   # packages: install from repositories.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget gzip tar;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libc++-dev;               fi
 # - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi # compiled, not installed.
@@ -88,6 +89,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install diffutils findutils;                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libbz2-dev;                                fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal python-tk;                  fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install wget gzip;            fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install git;                  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install gcc;                  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install openmpi;              fi
