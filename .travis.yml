@@ -54,6 +54,7 @@ matrix:
       sudo: required
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
+      python: 2.7
 
 virtualenv:
 
@@ -99,7 +100,11 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install autoconf automake;    fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install diffutils findutils;  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install bzip2;                fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install python --with-tcl-tk; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install python@2 --with-tcl-tk;                                        fi # PETSc / SLEPc don't support python3.
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    link --overwrite --force python@2;                                     fi # PETSc / SLEPc don't support python3.
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then ls -al /usr/local/opt/python@2/bin/python*;                                         fi # PETSc / SLEPc don't support python3.
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then sudo ln -fs /usr/local/opt/python@2/bin/python2 /usr/local/opt/python@2/bin/python; fi # PETSc / SLEPc don't support python3.
+  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then export PATH="/usr/local/opt/python@2/bin:$PATH";                                    fi # PETSc / SLEPc don't support python3.
   - sudo pip install --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
 
   # code quality: install checkers.
