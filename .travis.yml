@@ -116,6 +116,11 @@ script:
   - pushd $TRAVIS_BUILD_DIR
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./dev.sh; fi
 
+  # remove old logs (avoid pollution in case of failure).
+  - rm -f $TRAVIS_BUILD_DIR/prq/*/prq.*.log
+  - rm -f $TRAVIS_BUILD_DIR/prq/*petsc*/*arch*/externalpackages/*/*.log
+  - rm -f $TRAVIS_BUILD_DIR/prq/*slepc*/*arch*/externalpackages/*/*.log
+
   # compile openmpi and boost (travis ones may be outdated even after upgrade).
   - pushd $TRAVIS_BUILD_DIR
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh openmpi; fi
