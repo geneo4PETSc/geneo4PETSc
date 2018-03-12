@@ -49,12 +49,12 @@ matrix:
       python: 3.3
 
     # Mac OS.
-    - os: osx
-      osx_image: xcode9
-      sudo: required
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
-      python: 2.7
+    #- os: osx
+    #  osx_image: xcode9
+    #  sudo: required
+    #  env:
+    #    - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
+    #  python: 2.7
 
 virtualenv:
 
