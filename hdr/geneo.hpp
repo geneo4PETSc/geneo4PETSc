@@ -20,11 +20,11 @@ using namespace std;
  *           the user MUST ALWAYS call KSPSetInitialGuessNonzero(ksp, PETSC_TRUE) after initGenEOPC.
  *           pcX0 is set to a non zero initial guess if efficient hybrid mode is used.
  *           pcX0 is zeroed otherwise.
- *   - dofIdxDomLoc: set of DOF each local domain is made of.
+ *   - dofIdxDomLoc: set of (global) DOFs each local domain is made of.
  *   - dofIdxMultLoc: for each domain, list of DOF multiplicities.
  *                    the order of multiplicities must be consistent with the order of the DOF defined
  *                    by the local/global mapping.
- *   - intersectLoc: for each domain, list of intersections (DOF) with other domains.
+ *   - intersectLoc: for each domain, list of intersections with other domains (list of local DOFs).
  */
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
