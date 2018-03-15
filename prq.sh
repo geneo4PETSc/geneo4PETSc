@@ -7,7 +7,7 @@ trap 'errorMsg' EXIT
 
 export PRQ_DIR; PRQ_DIR="$(pwd)/prq"
 
-echo "This script is meant to help installing prerequistes."
+echo "This script is meant to help installing prerequisites."
 echo "Call this script with any of the following arguments: openmpi boost petsc slepc"
 if [[ "$#" == "0" ]]; then exit 0; fi
 
