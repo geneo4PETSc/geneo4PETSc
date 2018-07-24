@@ -768,7 +768,7 @@ int createA(unsigned int const & nbDOFLoc, unsigned int const & nbSubMatLoc,
 
   if (opt.useMatMPI) {
     Mat pcTmpA; // Get A as a MatMPI matrix (not a MatIS).
-    pcRC = MatISGetMPIXAIJ(pcA, MAT_INITIAL_MATRIX, &pcTmpA); // Assemble local parts of A.
+    pcRC = MatConvert(pcA, MATAIJ, MAT_INITIAL_MATRIX, &pcTmpA); // Assemble local parts of A.
     CHKERRQ(pcRC);
     pcRC = MatDestroy(&pcA);
     CHKERRQ(pcRC);

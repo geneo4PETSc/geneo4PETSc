@@ -401,7 +401,7 @@ PetscErrorCode createZE2G(vector<Vec> const & pcAllEigVecLoc, Mat & pcZE2L, gene
 
   // Store aside a MPI version of Z in the context (for later use during iterations).
 
-  pcRC = MatISGetMPIXAIJ(pcZE2G, MAT_INITIAL_MATRIX, &(gCtx->pcZE2G)); // Assemble local parts of Z.
+  pcRC = MatConvert(pcZE2G, MATAIJ, MAT_INITIAL_MATRIX, &(gCtx->pcZE2G)); // Assemble local parts of Z.
   CHKERRQ(pcRC);
 
   // Check on demand.
@@ -1686,7 +1686,7 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
   // Dirichlet matrix: local matrix (extracted by domain) from A after assembly.
 
   Mat pcA; // Get A as a MatMPI matrix (not a MatIS).
-  pcRC = MatISGetMPIXAIJ(gCtx->pcA, MAT_INITIAL_MATRIX, &pcA); // Assemble local parts of A.
+  pcRC = MatConvert(gCtx->pcA, MATAIJ, MAT_INITIAL_MATRIX, &pcA); // Assemble local parts of A.
   CHKERRQ(pcRC);
   Mat * pcADirLoc = NULL; // Dirichlet matrix.
   pcRC = MatCreateSubMatrices(pcA, 1, &(gCtx->pcIS), &(gCtx->pcIS), MAT_INITIAL_MATRIX, &pcADirLoc);
