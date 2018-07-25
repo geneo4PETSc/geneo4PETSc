@@ -7,6 +7,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <geneo_c.h>
 
 using namespace std;
 
@@ -31,15 +32,6 @@ PetscErrorCode initGenEOPC(PC & pcPC,
                            ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
                            set<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc);
-
-/*
- * createGenEOPC: create GenEO PC.
- * This function must be used as a callback passed to PCRegister.
- */
-extern "C" {
-     PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC);
-     PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS, IS*);
-}
 
 /*
  * usageGenEO: usage of GenEO.
