@@ -36,7 +36,10 @@ PetscErrorCode initGenEOPC(PC & pcPC,
  * createGenEOPC: create GenEO PC.
  * This function must be used as a callback passed to PCRegister.
  */
-PetscErrorCode createGenEOPC(PC pcPC);
+extern "C" {
+     PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC);
+     PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS, IS*);
+}
 
 /*
  * usageGenEO: usage of GenEO.

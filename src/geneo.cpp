@@ -2496,6 +2496,64 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
   return 0;
 }
 
+extern "C" {
+
+PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofIntersections)
+{
+     PetscErrorCode ierr;
+     Mat            P;
+     ISLocalToGlobalMapping rmap, cmap;
+     PetscInt       n, m, N, M;
+     auto *localDofset = new set<unsigned int>;
+     auto *dofIdxMultLoc = new vector<unsigned int>;
+     auto *intersectLoc = new vector<vector<unsigned int>>;
+     const PetscInt    *dofs;
+     PetscMPIInt        size;
+
+     PetscFunctionBegin;
+     ierr = PCGetOperators(pc, NULL, &P); CHKERRQ(ierr);
+     ierr = MatGetLocalToGlobalMapping(P, &rmap, &cmap); CHKERRQ(ierr);
+     if (rmap != cmap) {
+          SETERRQ(PETSC_COMM_SELF,  PETSC_ERR_ARG_WRONG, "Row and column LGMaps must match");
+     }
+     ierr = MatGetSize(P, &N, &M); CHKERRQ(ierr);
+     if (N != M) {
+          SETERRQ(PetscObjectComm((PetscObject)pc),  PETSC_ERR_ARG_WRONG, "Matrix must be square");
+     }
+     ierr = ISLocalToGlobalMappingGetIndices(rmap, &dofs); CHKERRQ(ierr);
+     ierr = ISLocalToGlobalMappingGetSize(rmap, &n); CHKERRQ(ierr);
+     for (int i = 0; i < n; i++ ) {
+          localDofset->insert(static_cast<unsigned int>(dofs[i]));
+     }
+     ierr = ISLocalToGlobalMappingRestoreIndices(rmap, &dofs); CHKERRQ(ierr);
+
+     ierr = ISGetLocalSize(dofMultiplicities, &m); CHKERRQ(ierr);
+     if (n != m) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Mismatch in dof mult size and local size");
+     ierr = ISGetIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
+     dofIdxMultLoc->reserve(n);
+     for (int i = 0; i < n; i++) {
+          dofIdxMultLoc->push_back(static_cast<unsigned int>(dofs[i]));
+     }
+     ierr = ISRestoreIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
+
+     ierr = MPI_Comm_size(PetscObjectComm((PetscObject)pc), &size); CHKERRQ(ierr);
+     intersectLoc->reserve(size);
+     for (int i = 0; i < size; i++) {
+          auto *tmp = new vector<unsigned int>;
+          ierr = ISGetLocalSize(dofIntersections[i], &m); CHKERRQ(ierr);
+          ierr = ISGetIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
+          for (int j = 0; j < m; j++) {
+               tmp->push_back(static_cast<unsigned int>(dofs[j]));
+          }
+          ierr = ISRestoreIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
+          intersectLoc->push_back(*tmp);
+     }
+     ierr = initGenEOPC(pc, N, n, rmap, P, NULL, NULL, localDofset, dofIdxMultLoc,
+                        intersectLoc); CHKERRQ(ierr);
+     PetscFunctionReturn(0);
+}
+}
+
 /*
  * initGenEOPC: initialize the GenEO PC.
  *   - pcPC: PC created by createGenEOPC through PCRegister.
@@ -2512,72 +2570,13 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
  *                    by the local/global mapping.
  *   - intersectLoc: for each domain, list of intersections (DOF) with other domains.
  */
-
-extern "C" {
-
-PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofIntersections)
-{
-     PetscErrorCode ierr;
-     Mat            P;
-     ISLocalToGlobalMapping rmap, cmap;
-     PetscInt       n, m, N, M;
-     set<unsigned int> localDofset;
-     vector<unsigned int> dofIdxMultLoc;
-     vector<vector<unsigned int>> intersectLoc;
-     const PetscInt    *dofs;
-     PetscMPIInt        size;
-
-     PetscFunctionBegin;
-     ierr = PCGetOperators(pc, NULL, &P); CHKERRQ(ierr);
-     ierr = MatGetLocalToGlobalMapping(P, &rmap, &cmap); CHKERRQ(ierr);
-     if (rmap != cmap) {
-          SETERRQ(PETSC_COMM_SELF,  PETSC_ERR_ARG_WRONG, "Row and column LGMaps must match");
-     }
-     ierr = MatGetSize(P, &N, &M); CHKERRQ(ierr);
-     if (N != M) {
-          SETERRQ(PetscObjectComm((PetscObject)pc),  PETSC_ERR_ARG_WRONG, "Matrix must be square");
-     }
-     ierr = MatGetLocalSize(P, &n, &m); CHKERRQ(ierr);
-
-     ierr = ISLocalToGlobalMappingGetIndices(rmap, &dofs); CHKERRQ(ierr);
-     for (int i = 0; i < n; i++ ) {
-          localDofset.insert(static_cast<unsigned int>(dofs[i]));
-     }
-     ierr = ISLocalToGlobalMappingRestoreIndices(rmap, &dofs); CHKERRQ(ierr);
-
-     ierr = ISGetLocalSize(dofMultiplicities, &m); CHKERRQ(ierr);
-     if (n != m) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Mismatch in dof mult size and local size");
-     ierr = ISGetIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
-     dofIdxMultLoc.reserve(n);
-     for (int i = 0; i < n; i++) {
-          dofIdxMultLoc.push_back(dofs[i]);
-     }
-     ierr = ISRestoreIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
-
-     ierr = MPI_Comm_size(PetscObjectComm((PetscObject)pc), &size); CHKERRQ(ierr);
-     intersectLoc.reserve(size);
-     for (int i = 0; i < size; i++) {
-          ierr = ISGetLocalSize(dofIntersections[i], &m); CHKERRQ(ierr);
-          intersectLoc[i].reserve(m);
-          ierr = ISGetIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
-          for (int j = 0; j < m; j++) {
-               intersectLoc[i].push_back(dofs[j]);
-          }
-          ierr = ISRestoreIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
-     }
-     ierr = initGenEOPC(pc, N, n, rmap, P, NULL, NULL, &localDofset, &dofIdxMultLoc,
-                        &intersectLoc); CHKERRQ(ierr);
-     PetscFunctionReturn(0);
-}
-}
-
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
                            ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
                            set<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc) {
   // Get the context.
-
+  PetscErrorCode ierr;
   if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
   geneoContext * gCtx = (geneoContext *) pcPC->data;
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
@@ -2608,7 +2607,8 @@ PetscErrorCode initGenEOPC(PC & pcPC,
  * createGenEOPC: create GenEO PC.
  * This function must be used as a callback passed to PCRegister.
  */
-PetscErrorCode createGenEOPC(PC pcPC) {
+extern "C" {
+PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC) {
   // Create a context.
 
   geneoContext * gCtx = new geneoContext();
@@ -2696,4 +2696,5 @@ PetscErrorCode createGenEOPC(PC pcPC) {
   CHKERRQ(pcRC);
 
   return 0;
+}
 }
