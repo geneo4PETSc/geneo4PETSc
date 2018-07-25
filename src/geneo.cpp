@@ -1604,6 +1604,15 @@ PetscErrorCode setUpLevel2(geneoContext * const gCtx,
 
   // Modify initial guess on demand (efficient hybrid).
 
+  // If we didn't provide initial guess and RHS.
+  if (!gCtx->pcX0) {
+    pcRC = MatCreateVecs(pcA, &gCtx->pcX0, NULL);
+    CHKERRQ(pcRC);
+  }
+  if (!gCtx->pcB) {
+    pcRC = MatCreateVecs(pcA, NULL, &gCtx->pcB);
+    CHKERRQ(pcRC);
+  }
   if (gCtx->effHybrid) {
     pcRC = applyQ(gCtx, gCtx->pcB, gCtx->pcX0, "setup.initialGuess", NULL, NULL, NULL); // X0 = Q*B.
     CHKERRQ(pcRC);
@@ -2165,7 +2174,7 @@ PetscErrorCode destroyLevel2(geneoContext * const gCtx) {
 
 static PetscErrorCode destroyGenEOPC(PC pcPC) {
   // Get the context.
-
+  PetscErrorCode pcRC;
   if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
   geneoContext * gCtx = (geneoContext *) pcPC->data;
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
@@ -2206,16 +2215,16 @@ static PetscErrorCode destroyGenEOPC(PC pcPC) {
   gCtx->nbDOFLoc = 0;
   gCtx->pcMap = NULL; // Do not destroy (creation has been done out of context).
   gCtx->pcA = NULL; // Do not destroy (creation has been done out of context).
-  gCtx->pcB = NULL; // Do not destroy (creation has been done out of context).
-  gCtx->pcX0 = NULL; // Do not destroy (creation has been done out of context).
+  pcRC = VecDestroy(&gCtx->pcB); CHKERRQ(pcRC);
+  pcRC = VecDestroy(&gCtx->pcX0); CHKERRQ(pcRC);
   if (gCtx->pcIS) {
-    PetscErrorCode pcRC = ISDestroy(&(gCtx->pcIS));
+    pcRC = ISDestroy(&(gCtx->pcIS));
     CHKERRQ(pcRC);
   }
   gCtx->dofIdxMultLoc = NULL; // Do not destroy (creation has been done out of context).
   gCtx->intersectLoc = NULL; // Do not destroy (creation has been done out of context).
 
-  PetscErrorCode pcRC = destroyLevel1(gCtx);
+  pcRC = destroyLevel1(gCtx);
   CHKERRQ(pcRC);
   if (gCtx->lvl2) {
     pcRC = destroyLevel2(gCtx);
@@ -2591,7 +2600,13 @@ PetscErrorCode initGenEOPC(PC & pcPC,
   gCtx->pcMap = pcMap;
   gCtx->pcA = pcA;
   gCtx->pcB = pcB;
+  if (pcB) {
+    ierr = PetscObjectReference((PetscObject)pcB); CHKERRQ(ierr);
+  }
   gCtx->pcX0 = pcX0;
+  if (pcX0) {
+    ierr = PetscObjectReference((PetscObject)pcX0); CHKERRQ(ierr);
+  }
   gCtx->pcIS = NULL;
   if (dofIdxDomLoc) {
     vector<PetscInt> pcIdxDomLoc;
