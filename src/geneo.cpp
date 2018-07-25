@@ -385,7 +385,10 @@ PetscErrorCode createZE2G(vector<Vec> const & pcAllEigVecLoc, Mat & pcZE2L, gene
   // not the size of the local IS block, since that is a property only of MatIS. It is the size of the local piece of the
   // vector you multiply. This allows PETSc to understand the parallel layout of the Vec, and how it matched the Mat.
   Mat pcZE2G;
-  pcRC = MatCreateIS(PETSC_COMM_WORLD, 1, PETSC_DECIDE, pcNbEVLoc, gCtx->nbDOF, pcNbEV, gCtx->pcMap, evMap, &pcZE2G);
+  PetscInt m;
+  pcRC = MatGetLocalSize(gCtx->pcA, &m, NULL);
+  CHKERRQ(pcRC);
+  pcRC = MatCreateIS(PETSC_COMM_WORLD, 1, m, pcNbEVLoc, gCtx->nbDOF, pcNbEV, gCtx->pcMap, evMap, &pcZE2G);
   CHKERRQ(pcRC);
   pcRC = MatISSetLocalMat(pcZE2G, pcZE2L); // Set domain matrix locally.
   CHKERRQ(pcRC);
