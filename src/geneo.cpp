@@ -969,45 +969,30 @@ PetscErrorCode createPartitionOfUnity(geneoContext * const gCtx) {
 
   // Compute partition of unity.
 
-  vector<PetscScalar> dofUnitPartLoc; // Partition of unity of DOFs of the local domain.
-  dofUnitPartLoc.reserve(gCtx->dofIdxMultLoc->size());
-  for (auto idxMult = gCtx->dofIdxMultLoc->cbegin(); idxMult != gCtx->dofIdxMultLoc->cend(); idxMult++) {
-    PetscScalar unityPart = 1./((PetscScalar) *idxMult);
-    dofUnitPartLoc.push_back(unityPart); // Stored in the order imposed by the set.
+  PetscErrorCode pcRC;
+  PetscScalar   *array;
+  pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &gCtx->pcDLoc); CHKERRQ(pcRC);
+  pcRC = VecGetArray(gCtx->pcDLoc, &array); CHKERRQ(pcRC);
+
+  int i = 0;
+  for (auto mult = gCtx->dofIdxMultLoc->cbegin(); mult != gCtx->dofIdxMultLoc->cend(); mult++, i++) {
+    array[i] = 1.0/((PetscScalar)*mult);
   }
-
-  // Create partition of unity.
-
-  vector<PetscInt> pcIdxLoc;
-  pcIdxLoc.reserve(gCtx->nbDOFLoc);
-  for (unsigned int i = 0; i < gCtx->nbDOFLoc; i++) pcIdxLoc.push_back(i);
-
-  PetscErrorCode pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &(gCtx->pcDLoc));
-  CHKERRQ(pcRC);
-  pcRC = VecSetValues(gCtx->pcDLoc, gCtx->nbDOFLoc, pcIdxLoc.data(), dofUnitPartLoc.data(), INSERT_VALUES);
+  pcRC = VecRestoreArray(gCtx->pcDLoc, &array);
   CHKERRQ(pcRC);
 
   // Debug or check on demand.
 
-  if (gCtx->debug >= 2 || gCtx->check) {
-    PetscViewer pcView;
-    string dbgchkFile = (gCtx->check ? gCtx->checkFile : gCtx->debugFile) + ".setup.D";
-    bool dbgchkBin = (gCtx->check ? gCtx->checkBin : gCtx->debugBin);
-    bool dbgchkMat = (gCtx->check ? gCtx->checkMat : gCtx->debugMat);
-    pcRC = createViewer(dbgchkBin, dbgchkMat, PETSC_COMM_SELF, dbgchkFile, pcView);
+  pcRC = VecViewFromOptions(gCtx->pcDLoc, NULL, "-geneo_partition_of_unity_view");
+  CHKERRQ(pcRC);
+  if (gCtx->check) {
+    double const eps = numeric_limits<double>::epsilon();
+    PetscReal min;
+    pcRC = VecMin(gCtx->pcDLoc, NULL, &min);
     CHKERRQ(pcRC);
-    pcRC = VecView(gCtx->pcDLoc, pcView);
-    CHKERRQ(pcRC);
-    pcRC = PetscViewerDestroy(&pcView);
-    CHKERRQ(pcRC);
-
-    if (gCtx->check) {
-      double const eps = numeric_limits<double>::epsilon();
-      double min = *min_element(dofUnitPartLoc.cbegin(), dofUnitPartLoc.cend());
-      if (fabs(min) <= eps) {
-        stringstream msg; msg << "GenEO - check D: bad partition of unity, min " << min;
-        SETERRABT(msg.str().c_str());
-      }
+    if (fabs(min) <= eps) {
+      stringstream msg; msg << "GenEO - check D: bad partition of unity, min " << min;
+      SETERRABT(msg.str().c_str());
     }
   }
 
