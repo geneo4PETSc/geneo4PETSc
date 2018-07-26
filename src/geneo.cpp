@@ -1680,6 +1680,14 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
   CHKERRQ(pcRC);
   if (strcmp(MATIS, pcMatType) != 0) SETERRABT("GenEO preconditioner needs the A matrix to be of MATIS type");
 
+  // Ensure slepc is initialised
+  PetscBool init;
+  pcRC = SlepcInitialized(&init);
+  CHKERRQ(pcRC);
+  if (!init) {
+    pcRC = SlepcInitialize(NULL, NULL, NULL, NULL);
+    CHKERRQ(pcRC);
+  }
   // Dirichlet matrix: local matrix (extracted by domain) from A after assembly.
 
   Mat pcA; // Get A as a MatMPI matrix (not a MatIS).
