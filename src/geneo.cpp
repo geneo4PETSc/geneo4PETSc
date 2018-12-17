@@ -153,7 +153,7 @@ PetscErrorCode setUpLevel1(geneoContext * const gCtx, Mat const * const pcADirLo
   CHKERRQ(pcRC);
   pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &(gCtx->pcXLoc));
   CHKERRQ(pcRC);
-  pcRC = VecScatterCreate(gCtx->pcX, gCtx->pcIS, gCtx->pcXLoc, NULL, &(gCtx->pcScatCtx));
+  pcRC = VecScatterCreateWithData(gCtx->pcX, gCtx->pcIS, gCtx->pcXLoc, NULL, &(gCtx->pcScatCtx));
   CHKERRQ(pcRC);
 
   return 0;
