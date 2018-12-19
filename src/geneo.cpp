@@ -2509,7 +2509,7 @@ PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofInt
      Mat            P;
      ISLocalToGlobalMapping rmap, cmap;
      PetscInt       n, m, N, M;
-     auto *localDofset = new set<unsigned int>;
+     auto *localDofset = new vector<unsigned int>;
      auto *dofIdxMultLoc = new vector<unsigned int>;
      auto *intersectLoc = new vector<vector<unsigned int>>;
      const PetscInt    *dofs;
@@ -2527,8 +2527,9 @@ PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofInt
      }
      ierr = ISLocalToGlobalMappingGetIndices(rmap, &dofs); CHKERRQ(ierr);
      ierr = ISLocalToGlobalMappingGetSize(rmap, &n); CHKERRQ(ierr);
+     localDofset->reserve(n);
      for (int i = 0; i < n; i++ ) {
-          localDofset->insert(static_cast<unsigned int>(dofs[i]));
+          localDofset->push_back(static_cast<unsigned int>(dofs[i]));
      }
      ierr = ISLocalToGlobalMappingRestoreIndices(rmap, &dofs); CHKERRQ(ierr);
 
@@ -2578,7 +2579,7 @@ PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofInt
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
                            ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
-                           set<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
+                           vector<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc) {
   // Get the context.
   PetscErrorCode ierr;
