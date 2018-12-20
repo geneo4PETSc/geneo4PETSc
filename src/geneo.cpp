@@ -2278,10 +2278,10 @@ string usageGenEO(bool const petscPrintf) {
   msg << "                   L2 =    H2 =           hybrid GenEO-2 (1st level [proj. fine space] +  2d level [coarse space])" << endl;
   msg << "                   L2 =    E2 = efficient hybrid GenEO-2 (initial guess [coarse space] + 1st level [proj. fine space])" << endl;
   msg << "                   you can pass arguments to PETSc / SLEPc solvers at the command line using prefix:" << endl;
-  msg << "                     -dls1_ for      direct  local solve (level 1): -dls1_pc_factor_mat_solver_package mumps" << endl;
+  msg << "                     -dls1_ for      direct  local solve (level 1): -dls1_pc_factor_mat_solver_type mumps" << endl;
   msg << "                     -syl2_ for   sylvester  local solve (level 2): -syl2_ksp_view" << endl;
   msg << "                     -els2_ for       eigen  local solve (level 2): -els2_eps_max_it 100 -els2_eps_type arnoldi" << endl;
-  msg << "                     -dcs2_ for      direct coarse solve (level 2): -dcs2_pc_factor_mat_solver_package mumps" << endl;
+  msg << "                     -dcs2_ for      direct coarse solve (level 2): -dcs2_pc_factor_mat_solver_type mumps" << endl;
   msg << "                     -ubl2_ for upper bound  local solve (level 2): -ubl2_eps_max_it 100" << endl;
   msg << "                     -chks_ for customizing EPS solver used to check for SPD (--check)" << endl;
   msg << "                     -chkr_ for customizing basis vector used to check for rank (--check)" << endl;
