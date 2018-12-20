@@ -1,6 +1,6 @@
 # Create project and target(s).
 
-project(geneo4PETSc)
+project(geneo4PETSc VERSION 1.0.0)
 
 add_executable(geneo4PETSc geneo4PETSc.cpp)
 set_target_properties(geneo4PETSc PROPERTIES CXX_STANDARD 11)
@@ -9,8 +9,12 @@ install(TARGETS geneo4PETSc RUNTIME DESTINATION bin)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Before add_library, allow the archive to be included in a shared object.
 add_library(geneopc STATIC geneo.cpp)
 set_target_properties(geneopc PROPERTIES CXX_STANDARD 11)
+set_target_properties(geneopc PROPERTIES VERSION 1.0.0)
+set_target_properties(geneopc PROPERTIES PUBLIC_HEADER "../hdr/geneo_c.h")
 target_include_directories(geneopc PRIVATE "../hdr")
-install(TARGETS geneopc ARCHIVE DESTINATION lib)
+include(GNUInstallDirs)
+install(TARGETS geneopc ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Set geneo dependencies.
 
