@@ -65,7 +65,6 @@ add_subdirectory(pkg)
 # Add source code.
 
 add_subdirectory(src)
-add_subdirectory(hdr)
 
 # Add tests.
 
