@@ -50,10 +50,9 @@ matrix:
 
     # Mac OS.
     - os: osx
-      osx_image: xcode9
       sudo: required
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
+        - MATRIX_EVAL="CC=cc && CXX=c++ && FC=gfortran"
       python: 2.7
 
 virtualenv:
