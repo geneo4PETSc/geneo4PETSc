@@ -152,7 +152,7 @@ script:
   - mkdir BUILD; pushd BUILD
   - cmake --version
   - export BOOST_FLAGS="-Wno-expansion-to-defined" # Prevent boost errors.
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror -pedantic -pedantic-errors $BOOST_FLAGS --coverage" ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-Wall -Wextra -pedantic -pedantic-errors $BOOST_FLAGS --coverage" ..
   - make VERBOSE=1
   - travis_wait 25 make checkv
 
