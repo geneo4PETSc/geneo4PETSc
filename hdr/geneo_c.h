@@ -6,6 +6,6 @@
  * This function must be used as a callback passed to PCRegister.
  */
 
-PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC);
-PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS, IS*);
+PETSC_EXTERN PetscErrorCode createGenEOPC(PC);
+PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC, Mat, IS, IS*);
 #endif
