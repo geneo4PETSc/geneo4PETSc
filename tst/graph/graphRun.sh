@@ -54,7 +54,7 @@ PC="${PC} -pc_type#geneo#-geneo_lvl#SORAS,E2#-geneo_offload"
 KSP_OPT=("-ksp_type#gmres") # "-ksp_type#cg")
 OPT="-ksp_max_it 1000 -ksp_gmres_restart 1000" # Forbid GMRES restart (by imposing restart = max its).
 OPT="${OPT} -options_left no" # Get rid of unused option warnings with options_left (get clean logs).
-GENEO_L1_DLS=("-dls1_pc_factor_mat_solver_package#mumps") # "-dls1_pc_factor_mat_solver_package#superlu")
+GENEO_L1_DLS=("-dls1_pc_factor_mat_solver_type#mumps") # "-dls1_pc_factor_mat_solver_type#superlu")
 GENEO_L1_OPTIM=("-geneo_optim#0.00" "-geneo_optim#0.02")
 GENEO_L2_TAU_GAMMA=("-geneo_tau#0.1#-geneo_gamma#8." "-geneo_tau#0.2#-geneo_gamma#12.")
 GENEO_L2_ELS=("-els2_eps_type#arpack") # "-els2_eps_type#krylovschur#-geneo_no_syl")
@@ -154,7 +154,7 @@ do
 
                 OPT_CMD="${o//[#]/ }"
                 OPT_LOG="${o//[#]/:}"; OPT_LOG="${OPT_LOG//-/}"
-                OPT_LOG="${OPT_LOG//pc_factor_mat_solver_package/pc_solver}"; OPT_LOG="${OPT_LOG//els2_eps_type/els2_type}"
+                OPT_LOG="${OPT_LOG//pc_factor_mat_solver_type/pc_solver}"; OPT_LOG="${OPT_LOG//els2_eps_type/els2_type}"
 
                 M_LOG="${m//--metisDual/dual}"; M_LOG="${M_LOG//--metisNodal/nodal}"
 

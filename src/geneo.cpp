@@ -153,7 +153,7 @@ PetscErrorCode setUpLevel1(geneoContext * const gCtx, Mat const * const pcADirLo
   CHKERRQ(pcRC);
   pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &(gCtx->pcXLoc));
   CHKERRQ(pcRC);
-  pcRC = VecScatterCreate(gCtx->pcX, gCtx->pcIS, gCtx->pcXLoc, NULL, &(gCtx->pcScatCtx));
+  pcRC = VecScatterCreateWithData(gCtx->pcX, gCtx->pcIS, gCtx->pcXLoc, NULL, &(gCtx->pcScatCtx));
   CHKERRQ(pcRC);
 
   return 0;
@@ -385,7 +385,10 @@ PetscErrorCode createZE2G(vector<Vec> const & pcAllEigVecLoc, Mat & pcZE2L, gene
   // not the size of the local IS block, since that is a property only of MatIS. It is the size of the local piece of the
   // vector you multiply. This allows PETSc to understand the parallel layout of the Vec, and how it matched the Mat.
   Mat pcZE2G;
-  pcRC = MatCreateIS(PETSC_COMM_WORLD, 1, PETSC_DECIDE, pcNbEVLoc, gCtx->nbDOF, pcNbEV, gCtx->pcMap, evMap, &pcZE2G);
+  PetscInt m;
+  pcRC = MatGetLocalSize(gCtx->pcA, &m, NULL);
+  CHKERRQ(pcRC);
+  pcRC = MatCreateIS(PETSC_COMM_WORLD, 1, m, pcNbEVLoc, gCtx->nbDOF, pcNbEV, gCtx->pcMap, evMap, &pcZE2G);
   CHKERRQ(pcRC);
   pcRC = MatISSetLocalMat(pcZE2G, pcZE2L); // Set domain matrix locally.
   CHKERRQ(pcRC);
@@ -401,7 +404,7 @@ PetscErrorCode createZE2G(vector<Vec> const & pcAllEigVecLoc, Mat & pcZE2L, gene
 
   // Store aside a MPI version of Z in the context (for later use during iterations).
 
-  pcRC = MatISGetMPIXAIJ(pcZE2G, MAT_INITIAL_MATRIX, &(gCtx->pcZE2G)); // Assemble local parts of Z.
+  pcRC = MatConvert(pcZE2G, MATAIJ, MAT_INITIAL_MATRIX, &(gCtx->pcZE2G)); // Assemble local parts of Z.
   CHKERRQ(pcRC);
 
   // Check on demand.
@@ -966,45 +969,30 @@ PetscErrorCode createPartitionOfUnity(geneoContext * const gCtx) {
 
   // Compute partition of unity.
 
-  vector<PetscScalar> dofUnitPartLoc; // Partition of unity of DOFs of the local domain.
-  dofUnitPartLoc.reserve(gCtx->dofIdxMultLoc->size());
-  for (auto idxMult = gCtx->dofIdxMultLoc->cbegin(); idxMult != gCtx->dofIdxMultLoc->cend(); idxMult++) {
-    PetscScalar unityPart = 1./((PetscScalar) *idxMult);
-    dofUnitPartLoc.push_back(unityPart); // Stored in the order imposed by the set.
+  PetscErrorCode pcRC;
+  PetscScalar   *array;
+  pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &gCtx->pcDLoc); CHKERRQ(pcRC);
+  pcRC = VecGetArray(gCtx->pcDLoc, &array); CHKERRQ(pcRC);
+
+  int i = 0;
+  for (auto mult = gCtx->dofIdxMultLoc->cbegin(); mult != gCtx->dofIdxMultLoc->cend(); mult++, i++) {
+    array[i] = 1.0/((PetscScalar)*mult);
   }
-
-  // Create partition of unity.
-
-  vector<PetscInt> pcIdxLoc;
-  pcIdxLoc.reserve(gCtx->nbDOFLoc);
-  for (unsigned int i = 0; i < gCtx->nbDOFLoc; i++) pcIdxLoc.push_back(i);
-
-  PetscErrorCode pcRC = VecCreateSeq(PETSC_COMM_SELF, gCtx->nbDOFLoc, &(gCtx->pcDLoc));
-  CHKERRQ(pcRC);
-  pcRC = VecSetValues(gCtx->pcDLoc, gCtx->nbDOFLoc, pcIdxLoc.data(), dofUnitPartLoc.data(), INSERT_VALUES);
+  pcRC = VecRestoreArray(gCtx->pcDLoc, &array);
   CHKERRQ(pcRC);
 
   // Debug or check on demand.
 
-  if (gCtx->debug >= 2 || gCtx->check) {
-    PetscViewer pcView;
-    string dbgchkFile = (gCtx->check ? gCtx->checkFile : gCtx->debugFile) + ".setup.D";
-    bool dbgchkBin = (gCtx->check ? gCtx->checkBin : gCtx->debugBin);
-    bool dbgchkMat = (gCtx->check ? gCtx->checkMat : gCtx->debugMat);
-    pcRC = createViewer(dbgchkBin, dbgchkMat, PETSC_COMM_SELF, dbgchkFile, pcView);
+  pcRC = VecViewFromOptions(gCtx->pcDLoc, NULL, "-geneo_partition_of_unity_view");
+  CHKERRQ(pcRC);
+  if (gCtx->check) {
+    double const eps = numeric_limits<double>::epsilon();
+    PetscReal min;
+    pcRC = VecMin(gCtx->pcDLoc, NULL, &min);
     CHKERRQ(pcRC);
-    pcRC = VecView(gCtx->pcDLoc, pcView);
-    CHKERRQ(pcRC);
-    pcRC = PetscViewerDestroy(&pcView);
-    CHKERRQ(pcRC);
-
-    if (gCtx->check) {
-      double const eps = numeric_limits<double>::epsilon();
-      double min = *min_element(dofUnitPartLoc.cbegin(), dofUnitPartLoc.cend());
-      if (fabs(min) <= eps) {
-        stringstream msg; msg << "GenEO - check D: bad partition of unity, min " << min;
-        SETERRABT(msg.str().c_str());
-      }
+    if (fabs(min) <= eps) {
+      stringstream msg; msg << "GenEO - check D: bad partition of unity, min " << min;
+      SETERRABT(msg.str().c_str());
     }
   }
 
@@ -1601,6 +1589,15 @@ PetscErrorCode setUpLevel2(geneoContext * const gCtx,
 
   // Modify initial guess on demand (efficient hybrid).
 
+  // If we didn't provide initial guess and RHS.
+  if (!gCtx->pcX0) {
+    pcRC = MatCreateVecs(pcA, &gCtx->pcX0, NULL);
+    CHKERRQ(pcRC);
+  }
+  if (!gCtx->pcB) {
+    pcRC = MatCreateVecs(pcA, NULL, &gCtx->pcB);
+    CHKERRQ(pcRC);
+  }
   if (gCtx->effHybrid) {
     pcRC = applyQ(gCtx, gCtx->pcB, gCtx->pcX0, "setup.initialGuess", NULL, NULL, NULL); // X0 = Q*B.
     CHKERRQ(pcRC);
@@ -1683,10 +1680,18 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
   CHKERRQ(pcRC);
   if (strcmp(MATIS, pcMatType) != 0) SETERRABT("GenEO preconditioner needs the A matrix to be of MATIS type");
 
+  // Ensure slepc is initialised
+  PetscBool init;
+  pcRC = SlepcInitialized(&init);
+  CHKERRQ(pcRC);
+  if (!init) {
+    pcRC = SlepcInitialize(NULL, NULL, NULL, NULL);
+    CHKERRQ(pcRC);
+  }
   // Dirichlet matrix: local matrix (extracted by domain) from A after assembly.
 
   Mat pcA; // Get A as a MatMPI matrix (not a MatIS).
-  pcRC = MatISGetMPIXAIJ(gCtx->pcA, MAT_INITIAL_MATRIX, &pcA); // Assemble local parts of A.
+  pcRC = MatConvert(gCtx->pcA, MATAIJ, MAT_INITIAL_MATRIX, &pcA); // Assemble local parts of A.
   CHKERRQ(pcRC);
   Mat * pcADirLoc = NULL; // Dirichlet matrix.
   pcRC = MatCreateSubMatrices(pcA, 1, &(gCtx->pcIS), &(gCtx->pcIS), MAT_INITIAL_MATRIX, &pcADirLoc);
@@ -2162,7 +2167,7 @@ PetscErrorCode destroyLevel2(geneoContext * const gCtx) {
 
 static PetscErrorCode destroyGenEOPC(PC pcPC) {
   // Get the context.
-
+  PetscErrorCode pcRC;
   if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
   geneoContext * gCtx = (geneoContext *) pcPC->data;
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
@@ -2203,16 +2208,16 @@ static PetscErrorCode destroyGenEOPC(PC pcPC) {
   gCtx->nbDOFLoc = 0;
   gCtx->pcMap = NULL; // Do not destroy (creation has been done out of context).
   gCtx->pcA = NULL; // Do not destroy (creation has been done out of context).
-  gCtx->pcB = NULL; // Do not destroy (creation has been done out of context).
-  gCtx->pcX0 = NULL; // Do not destroy (creation has been done out of context).
+  pcRC = VecDestroy(&gCtx->pcB); CHKERRQ(pcRC);
+  pcRC = VecDestroy(&gCtx->pcX0); CHKERRQ(pcRC);
   if (gCtx->pcIS) {
-    PetscErrorCode pcRC = ISDestroy(&(gCtx->pcIS));
+    pcRC = ISDestroy(&(gCtx->pcIS));
     CHKERRQ(pcRC);
   }
   gCtx->dofIdxMultLoc = NULL; // Do not destroy (creation has been done out of context).
   gCtx->intersectLoc = NULL; // Do not destroy (creation has been done out of context).
 
-  PetscErrorCode pcRC = destroyLevel1(gCtx);
+  pcRC = destroyLevel1(gCtx);
   CHKERRQ(pcRC);
   if (gCtx->lvl2) {
     pcRC = destroyLevel2(gCtx);
@@ -2273,10 +2278,10 @@ string usageGenEO(bool const petscPrintf) {
   msg << "                   L2 =    H2 =           hybrid GenEO-2 (1st level [proj. fine space] +  2d level [coarse space])" << endl;
   msg << "                   L2 =    E2 = efficient hybrid GenEO-2 (initial guess [coarse space] + 1st level [proj. fine space])" << endl;
   msg << "                   you can pass arguments to PETSc / SLEPc solvers at the command line using prefix:" << endl;
-  msg << "                     -dls1_ for      direct  local solve (level 1): -dls1_pc_factor_mat_solver_package mumps" << endl;
+  msg << "                     -dls1_ for      direct  local solve (level 1): -dls1_pc_factor_mat_solver_type mumps" << endl;
   msg << "                     -syl2_ for   sylvester  local solve (level 2): -syl2_ksp_view" << endl;
   msg << "                     -els2_ for       eigen  local solve (level 2): -els2_eps_max_it 100 -els2_eps_type arnoldi" << endl;
-  msg << "                     -dcs2_ for      direct coarse solve (level 2): -dcs2_pc_factor_mat_solver_package mumps" << endl;
+  msg << "                     -dcs2_ for      direct coarse solve (level 2): -dcs2_pc_factor_mat_solver_type mumps" << endl;
   msg << "                     -ubl2_ for upper bound  local solve (level 2): -ubl2_eps_max_it 100" << endl;
   msg << "                     -chks_ for customizing EPS solver used to check for SPD (--check)" << endl;
   msg << "                     -chkr_ for customizing basis vector used to check for rank (--check)" << endl;
@@ -2496,6 +2501,65 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
   return 0;
 }
 
+extern "C" {
+
+PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofIntersections)
+{
+     PetscErrorCode ierr;
+     Mat            P;
+     ISLocalToGlobalMapping rmap, cmap;
+     PetscInt       n, m, N, M;
+     auto *localDofset = new vector<unsigned int>;
+     auto *dofIdxMultLoc = new vector<unsigned int>;
+     auto *intersectLoc = new vector<vector<unsigned int>>;
+     const PetscInt    *dofs;
+     PetscMPIInt        size;
+
+     PetscFunctionBegin;
+     ierr = PCGetOperators(pc, NULL, &P); CHKERRQ(ierr);
+     ierr = MatGetLocalToGlobalMapping(P, &rmap, &cmap); CHKERRQ(ierr);
+     if (rmap != cmap) {
+          SETERRQ(PETSC_COMM_SELF,  PETSC_ERR_ARG_WRONG, "Row and column LGMaps must match");
+     }
+     ierr = MatGetSize(P, &N, &M); CHKERRQ(ierr);
+     if (N != M) {
+          SETERRQ(PetscObjectComm((PetscObject)pc),  PETSC_ERR_ARG_WRONG, "Matrix must be square");
+     }
+     ierr = ISLocalToGlobalMappingGetIndices(rmap, &dofs); CHKERRQ(ierr);
+     ierr = ISLocalToGlobalMappingGetSize(rmap, &n); CHKERRQ(ierr);
+     localDofset->reserve(n);
+     for (int i = 0; i < n; i++ ) {
+          localDofset->push_back(static_cast<unsigned int>(dofs[i]));
+     }
+     ierr = ISLocalToGlobalMappingRestoreIndices(rmap, &dofs); CHKERRQ(ierr);
+
+     ierr = ISGetLocalSize(dofMultiplicities, &m); CHKERRQ(ierr);
+     if (n != m) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Mismatch in dof mult size and local size");
+     ierr = ISGetIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
+     dofIdxMultLoc->reserve(n);
+     for (int i = 0; i < n; i++) {
+          dofIdxMultLoc->push_back(static_cast<unsigned int>(dofs[i]));
+     }
+     ierr = ISRestoreIndices(dofMultiplicities, &dofs); CHKERRQ(ierr);
+
+     ierr = MPI_Comm_size(PetscObjectComm((PetscObject)pc), &size); CHKERRQ(ierr);
+     intersectLoc->reserve(size);
+     for (int i = 0; i < size; i++) {
+          auto *tmp = new vector<unsigned int>;
+          ierr = ISGetLocalSize(dofIntersections[i], &m); CHKERRQ(ierr);
+          ierr = ISGetIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
+          for (int j = 0; j < m; j++) {
+               tmp->push_back(static_cast<unsigned int>(dofs[j]));
+          }
+          ierr = ISRestoreIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
+          intersectLoc->push_back(*tmp);
+     }
+     ierr = initGenEOPC(pc, N, n, rmap, P, NULL, NULL, localDofset, dofIdxMultLoc,
+                        intersectLoc); CHKERRQ(ierr);
+     PetscFunctionReturn(0);
+}
+}
+
 /*
  * initGenEOPC: initialize the GenEO PC.
  *   - pcPC: PC created by createGenEOPC through PCRegister.
@@ -2515,10 +2579,10 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
                            ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
-                           set<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
+                           vector<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc) {
   // Get the context.
-
+  PetscErrorCode ierr;
   if (!pcPC) SETERRABT("GenEO preconditioner is invalid");
   geneoContext * gCtx = (geneoContext *) pcPC->data;
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
@@ -2530,7 +2594,13 @@ PetscErrorCode initGenEOPC(PC & pcPC,
   gCtx->pcMap = pcMap;
   gCtx->pcA = pcA;
   gCtx->pcB = pcB;
+  if (pcB) {
+    ierr = PetscObjectReference((PetscObject)pcB); CHKERRQ(ierr);
+  }
   gCtx->pcX0 = pcX0;
+  if (pcX0) {
+    ierr = PetscObjectReference((PetscObject)pcX0); CHKERRQ(ierr);
+  }
   gCtx->pcIS = NULL;
   if (dofIdxDomLoc) {
     vector<PetscInt> pcIdxDomLoc;
@@ -2549,7 +2619,8 @@ PetscErrorCode initGenEOPC(PC & pcPC,
  * createGenEOPC: create GenEO PC.
  * This function must be used as a callback passed to PCRegister.
  */
-PetscErrorCode createGenEOPC(PC pcPC) {
+extern "C" {
+PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC) {
   // Create a context.
 
   geneoContext * gCtx = new geneoContext();
@@ -2637,4 +2708,5 @@ PetscErrorCode createGenEOPC(PC pcPC) {
   CHKERRQ(pcRC);
 
   return 0;
+}
 }
