@@ -123,7 +123,7 @@ PetscErrorCode directLocalSolve(geneoContext const * const gCtx, KSP const & pcK
   return 0;
 }
 
-PetscErrorCode setUpLevel1(geneoContext * const gCtx, Mat const * const pcADirLoc, Mat const & pcARobLoc) {
+PetscErrorCode setUpLevel1(geneoContext * const gCtx, Mat const & pcADirLoc, Mat const & pcARobLoc) {
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
   if (!pcADirLoc) SETERRABT("GenEO preconditioner without dirichlet matrix");
 
@@ -139,7 +139,7 @@ PetscErrorCode setUpLevel1(geneoContext * const gCtx, Mat const * const pcADirLo
     CHKERRQ(pcRC);
   }
   else { // (1.30) from R1.
-    pcRC = KSPSetOperators(gCtx->pcKSPL1Loc, *pcADirLoc, *pcADirLoc); // Set Dirichlet matrix as operator.
+    pcRC = KSPSetOperators(gCtx->pcKSPL1Loc, pcADirLoc, pcADirLoc); // Set Dirichlet matrix as operator.
     CHKERRQ(pcRC);
   }
   pcRC = directLocalSolve(gCtx, gCtx->pcKSPL1Loc);
@@ -1231,7 +1231,7 @@ double getLocalGenEOGamma(geneoContext * const gCtx) {
   return gammaLoc;
 }
 
-int buildCoarseSpaceWithGenEO(Mat const & pcANeuLoc, Mat const * const pcADirLoc, Mat const & pcARobLoc,
+int buildCoarseSpaceWithGenEO(Mat const & pcANeuLoc, Mat const & pcADirLoc, Mat const & pcARobLoc,
                               geneoContext * const gCtx, Mat const & pcA) {
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
   if (!pcADirLoc) SETERRABT("GenEO preconditioner without dirichlet matrix");
@@ -1241,7 +1241,7 @@ int buildCoarseSpaceWithGenEO(Mat const & pcANeuLoc, Mat const * const pcADirLoc
   // Get the Dirichlet matrix weighted by the partition of unity (local matrix).
 
   Mat pcDADirDLoc;
-  PetscErrorCode pcRC = MatDuplicate(*pcADirLoc, MAT_COPY_VALUES, &pcDADirDLoc);
+  PetscErrorCode pcRC = MatDuplicate(pcADirLoc, MAT_COPY_VALUES, &pcDADirDLoc);
   CHKERRQ(pcRC);
   pcRC = MatDiagonalScale(pcDADirDLoc, gCtx->pcDLoc, gCtx->pcDLoc);
   CHKERRQ(pcRC);
@@ -1542,7 +1542,7 @@ PetscErrorCode applyQ(geneoContext * const gCtx, Vec const & pcX, Vec & pcQX, st
 }
 
 PetscErrorCode setUpLevel2(geneoContext * const gCtx,
-                           Mat const & pcANeuLoc, Mat const * const pcADirLoc, Mat const & pcARobLoc,
+                           Mat const & pcANeuLoc, Mat const & pcADirLoc, Mat const & pcARobLoc,
                            Mat const & pcA) {
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
   if (!pcADirLoc) SETERRABT("GenEO preconditioner without dirichlet matrix");
@@ -1611,7 +1611,7 @@ PetscErrorCode setUpLevel2(geneoContext * const gCtx,
 }
 
 PetscErrorCode createRobinMatrix(geneoContext * const gCtx,
-                                 Mat const & pcANeuLoc, Mat const * const pcADirLoc, Mat & pcARobLoc) {
+                                 Mat const & pcANeuLoc, Mat const & pcADirLoc, Mat & pcARobLoc) {
   if (!gCtx) SETERRABT("GenEO preconditioner without context");
   if (!pcADirLoc) SETERRABT("GenEO preconditioner without dirichlet matrix");
   if (!gCtx->dofIdxMultLoc) SETERRABT("GenEO preconditioner without DOF multiplicity");
@@ -1621,7 +1621,7 @@ PetscErrorCode createRobinMatrix(geneoContext * const gCtx,
 
   // Initialize Robin matrix with Dirichlet matrix.
 
-  PetscErrorCode pcRC = MatDuplicate(*pcADirLoc, MAT_COPY_VALUES, &pcARobLoc);
+  PetscErrorCode pcRC = MatDuplicate(pcADirLoc, MAT_COPY_VALUES, &pcARobLoc);
   CHKERRQ(pcRC);
   double const eps = numeric_limits<double>::epsilon();
   if (fabs(gCtx->optim) <= eps) return 0; // OK, we are done.
@@ -1688,15 +1688,26 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
     pcRC = SlepcInitialize(NULL, NULL, NULL, NULL);
     CHKERRQ(pcRC);
   }
-  // Dirichlet matrix: local matrix (extracted by domain) from A after assembly.
-
   Mat pcA; // Get A as a MatMPI matrix (not a MatIS).
   pcRC = MatConvert(gCtx->pcA, MATAIJ, MAT_INITIAL_MATRIX, &pcA); // Assemble local parts of A.
   CHKERRQ(pcRC);
-  Mat * pcADirLoc = NULL; // Dirichlet matrix.
-  pcRC = MatCreateSubMatrices(pcA, 1, &(gCtx->pcIS), &(gCtx->pcIS), MAT_INITIAL_MATRIX, &pcADirLoc);
-  CHKERRQ(pcRC); // Use MatCreateSubMatrices to get sequential matrix (MatCreateSubMatrix would return distributed matrix).
 
+  // Dirichlet matrix: local matrix (extracted by domain) from A after assembly.
+  Mat pcADirLoc;
+  if (!gCtx->pcADirLoc) {
+    Mat *matrices = NULL;
+    pcRC = MatCreateSubMatrices(pcA, 1, &(gCtx->pcIS), &(gCtx->pcIS), MAT_INITIAL_MATRIX, &matrices);
+    CHKERRQ(pcRC); // Use MatCreateSubMatrices to get sequential matrix (MatCreateSubMatrix would return distributed matrix).
+    pcADirLoc = matrices[0];
+    pcRC = PetscObjectReference((PetscObject)pcADirLoc);
+    CHKERRQ(pcRC);
+    pcRC = MatDestroySubMatrices(1, &matrices);
+    CHKERRQ(pcRC);
+  } else {
+    pcADirLoc = gCtx->pcADirLoc;
+    pcRC = PetscObjectReference((PetscObject)pcADirLoc);
+    CHKERRQ(pcRC);
+  }
   // Get Neumann matrix: local matrix (extracted by domain) from A before assembly.
 
   Mat pcANeuLoc;
@@ -1747,7 +1758,7 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
       string debugFile = gCtx->debugFile + ".setup.ADir";
       pcRC = createViewer(gCtx->debugBin, gCtx->debugMat, PETSC_COMM_SELF, debugFile, pcView);
       CHKERRQ(pcRC);
-      pcRC = MatView(*pcADirLoc, pcView);
+      pcRC = MatView(pcADirLoc, pcView);
       CHKERRQ(pcRC);
       pcRC = PetscViewerDestroy(&pcView);
       CHKERRQ(pcRC);
@@ -1822,7 +1833,8 @@ static PetscErrorCode setUpGenEOPC(PC pcPC) {
     pcRC = MatDestroy(&pcARobLoc);
     CHKERRQ(pcRC);
   }
-  pcRC = MatDestroyMatrices(1, &pcADirLoc);
+
+  pcRC = MatDestroy(&pcADirLoc);
   CHKERRQ(pcRC);
   pcRC = MatDestroy(&pcA);
   CHKERRQ(pcRC);
@@ -2503,7 +2515,7 @@ static PetscErrorCode setUpGenEOPCFromOptions(PetscOptionItems * PetscOptionsObj
 
 extern "C" {
 
-PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofIntersections)
+PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, Mat pcADirLoc, IS dofMultiplicities, IS *dofIntersections)
 {
      PetscErrorCode ierr;
      Mat            P;
@@ -2554,7 +2566,7 @@ PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofInt
           ierr = ISRestoreIndices(dofIntersections[i], &dofs); CHKERRQ(ierr);
           intersectLoc->push_back(*tmp);
      }
-     ierr = initGenEOPC(pc, N, n, rmap, P, NULL, NULL, localDofset, dofIdxMultLoc,
+     ierr = initGenEOPC(pc, N, n, rmap, P, pcADirLoc, NULL, NULL, localDofset, dofIdxMultLoc,
                         intersectLoc); CHKERRQ(ierr);
      PetscFunctionReturn(0);
 }
@@ -2578,7 +2590,7 @@ PETSC_EXTERN PetscErrorCode PCGenEOSetup(PC pc, IS dofMultiplicities, IS *dofInt
  */
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
-                           ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
+                           ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Mat const & pcADirLoc, Vec const & pcB, Vec const & pcX0,
                            vector<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc) {
   // Get the context.
@@ -2594,6 +2606,10 @@ PetscErrorCode initGenEOPC(PC & pcPC,
   gCtx->pcMap = pcMap;
   gCtx->pcA = pcA;
   gCtx->pcB = pcB;
+  if (pcADirLoc) {
+    gCtx->pcADirLoc = pcADirLoc;
+    ierr = PetscObjectReference((PetscObject)pcADirLoc); CHKERRQ(ierr);
+  }
   if (pcB) {
     ierr = PetscObjectReference((PetscObject)pcB); CHKERRQ(ierr);
   }
@@ -2650,6 +2666,7 @@ PETSC_EXTERN PetscErrorCode createGenEOPC(PC pcPC) {
   gCtx->nbDOF = 0;
   gCtx->nbDOFLoc = 0;
   gCtx->pcA = NULL;
+  gCtx->pcADirLoc = NULL;
   gCtx->pcMap = NULL;
   gCtx->pcIS = NULL;
   gCtx->dofIdxMultLoc = NULL;

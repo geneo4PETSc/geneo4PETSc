@@ -1343,7 +1343,7 @@ int solve(unsigned int const & nbDOF, unsigned int const & nbSubMat,
     dofIdxDomLoc_vector->reserve(dofIdxDomLoc.size());
     for (auto idx = dofIdxDomLoc.cbegin(); idx != dofIdxDomLoc.cend(); idx++)
       dofIdxDomLoc_vector->push_back(*idx);
-    pcRC = initGenEOPC(pcPC, nbDOF, nbDOFLoc, pcMap, pcA, pcB, pcX, dofIdxDomLoc_vector, &dofIdxMultLoc, &intersectLoc);
+    pcRC = initGenEOPC(pcPC, nbDOF, nbDOFLoc, pcMap, pcA, NULL, pcB, pcX, dofIdxDomLoc_vector, &dofIdxMultLoc, &intersectLoc);
     CHKERRQ(pcRC);
     pcRC = KSPSetInitialGuessNonzero(pcKSP, PETSC_TRUE);
     CHKERRQ(pcRC);

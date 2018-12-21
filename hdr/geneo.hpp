@@ -29,7 +29,8 @@ using namespace std;
  */
 PetscErrorCode initGenEOPC(PC & pcPC,
                            unsigned int const & nbDOF, unsigned int const & nbDOFLoc,
-                           ISLocalToGlobalMapping const & pcMap, Mat const & pcA, Vec const & pcB, Vec const & pcX0,
+                           ISLocalToGlobalMapping const & pcMap, Mat const & pcA,
+                           Mat const & pcADirLoc, Vec const & pcB, Vec const & pcX0,
                            vector<unsigned int> const * const dofIdxDomLoc, vector<unsigned int> const * const dofIdxMultLoc,
                            vector<vector<unsigned int>> const * const intersectLoc);
 
@@ -73,6 +74,7 @@ class geneoContext { // Shell preconditioner context: used to carry all informat
     unsigned int nbDOFLoc; // Size of the local domain.
     ISLocalToGlobalMapping pcMap; // Index set: needed to create MatIS.
     Mat pcA; // A matrix (global matrix).
+    Mat pcADirLoc; // The local Dirichlet matrix (will be constructed from pcA if not provided)
     Vec pcB; // Right hand side.
     Vec pcX0; // Initial guess.
     IS pcIS; // Index set: needed for scatter/gather (though this is the "same thing" than pcMap).
