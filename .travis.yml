@@ -14,54 +14,25 @@ matrix:
 
     # Ubuntu + python-2.
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
-      addons:
-        apt:
-          sources:
-            # update trusty with unsupported packages from this untrusted PPA.
-            - ubuntu-toolchain-r-test
-          packages:
-            - gfortran-7
-            - gcc-7
-            - g++-7
-            - libstdc++-7-dev
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
       python: 2.7
 
     # Ubuntu + python-3.
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
-      addons:
-        apt:
-          sources:
-            # update trusty with unsupported packages from this untrusted PPA.
-            - ubuntu-toolchain-r-test
-          packages:
-            - gfortran-7
-            - gcc-7
-            - g++-7
-            - libstdc++-7-dev
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
       python: 3.3
 
     # Mac OS.
     - os: osx
       sudo: required
-      env:
-        - MATRIX_EVAL="CC=cc && CXX=c++ && FC=gfortran"
       python: 2.7
 
 virtualenv:
 
   # system_site_packages is needed for pip to be allowed to install packages in the system
   system_site_packages: true
-
-before_install:
-    - eval "${MATRIX_EVAL}"
 
 install:
 
@@ -80,9 +51,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget gzip tar;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libc++-dev;               fi
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi # compiled, not installed.
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi # compiled, not installed.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libstdc++-*-dev;          fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install liblapack-dev;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake;                                     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install autoconf automake;                         fi
@@ -126,11 +97,6 @@ script:
   - rm -f $TRAVIS_BUILD_DIR/prq/*/prq.*.log
   - rm -f $TRAVIS_BUILD_DIR/prq/*petsc*/*arch*/externalpackages/*/*.log
   - rm -f $TRAVIS_BUILD_DIR/prq/*slepc*/*arch*/externalpackages/*/*.log
-
-  # compile openmpi and boost (travis ones may be outdated even after upgrade).
-  - pushd $TRAVIS_BUILD_DIR
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh openmpi; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh boost; fi
 
   # build and install petsc and slepc.
   - pushd $TRAVIS_BUILD_DIR
