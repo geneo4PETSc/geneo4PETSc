@@ -113,10 +113,11 @@ script:
   - export PKG_CONFIG_PATH="$TRAVIS_BUILD_DIR/prq/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
   - export CMAKE_PREFIX_PATH="$TRAVIS_BUILD_DIR/prq/local:${CMAKE_PREFIX_PATH}"
 
-  # tweak cmake on OSX (builds are slow: kill tests or get killed => keep only the first "dummy" test case).
+  # tweak cmake on OSX (builds are slow: kill tests or get killed [CI time limit] => keep only the first "dummy" test case).
   - pushd $TRAVIS_BUILD_DIR
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' -e 's/^add_test/#add_test/' ./tst/laplacian/CMakeLists.txt; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' -e 's/^add_test/#add_test/' ./tst/graph/CMakeLists.txt;     fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' -e 's/^add_test/#add_test/' ./tst/heat/CMakeLists.txt;      fi
 
   # build and test.
   - pushd $TRAVIS_BUILD_DIR
