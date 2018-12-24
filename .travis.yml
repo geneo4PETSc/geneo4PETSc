@@ -51,7 +51,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget gzip tar;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libstdc++-*-dev;          fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran-7 gcc-7 g++-7 libstdc++-7-dev;    fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install liblapack-dev;                             fi
