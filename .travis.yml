@@ -14,7 +14,7 @@ matrix:
 
     # Ubuntu + python-2.
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       addons:
         apt:
@@ -32,7 +32,7 @@ matrix:
 
     # Ubuntu + python-3.
     - os: linux
-      dist: trusty
+      dist: xenial
       sudo: required
       addons:
         apt:
@@ -80,15 +80,17 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget gzip tar;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libc++-dev;               fi
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi # compiled, not installed.
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi # compiled, not installed.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++;                          fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install liblapack-dev;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake;                                     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install autoconf automake;                         fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install diffutils findutils;                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libbz2-dev;                                fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal python-tk;                  fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-pip  python-minimal  python-tk;     fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python3-pip python3-minimal python3-tk;    fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo updatedb;                                                  fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install wget gzip              || true; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install git                    || true; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install gcc                    || true; fi
@@ -104,7 +106,12 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then ls -al /usr/local/opt/python@2/bin/python*;                                         fi # PETSc / SLEPc don't support python3.
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then sudo ln -fs /usr/local/opt/python@2/bin/python2 /usr/local/opt/python@2/bin/python; fi # PETSc / SLEPc don't support python3.
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then export PATH="/usr/local/opt/python@2/bin:$PATH";                                    fi # PETSc / SLEPc don't support python3.
-  - sudo pip install --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
+
+  # python: install from pip.
+  - sudo pip  install --ignore-installed --upgrade                                   pip                       # Same command for linux / osx.
+  - sudo pip  install --ignore-installed --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
+  - sudo pip3 install --ignore-installed --upgrade                                   pip                       # Same command for linux / osx.
+  - sudo pip3 install --ignore-installed --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
 
   # code quality: install checkers.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cppcheck shellcheck; sudo pip install pylint; fi
@@ -126,11 +133,6 @@ script:
   - rm -f $TRAVIS_BUILD_DIR/prq/*/prq.*.log
   - rm -f $TRAVIS_BUILD_DIR/prq/*petsc*/*arch*/externalpackages/*/*.log
   - rm -f $TRAVIS_BUILD_DIR/prq/*slepc*/*arch*/externalpackages/*/*.log
-
-  # compile openmpi and boost (travis ones may be outdated even after upgrade).
-  - pushd $TRAVIS_BUILD_DIR
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh openmpi; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis_wait 25 ./prq.sh boost; fi
 
   # build and install petsc and slepc.
   - pushd $TRAVIS_BUILD_DIR
@@ -165,8 +167,6 @@ cache:
 after_failure:
 
   # show build error or test log to know what is wrong if errors occured.
-  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*mpi*/prq.*.log
-  - tail -n 75 $TRAVIS_BUILD_DIR/prq/*boost*/prq.*.log
   - tail -n 75 $TRAVIS_BUILD_DIR/prq/*petsc*/prq.*.log
   - tail -n 75 $TRAVIS_BUILD_DIR/prq/*petsc*/*arch*/externalpackages/*/*.log
   - tail -n 75 $TRAVIS_BUILD_DIR/prq/*slepc*/prq.*.log
