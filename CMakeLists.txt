@@ -38,8 +38,8 @@ find_package(MPI REQUIRED)
 find_package(Boost REQUIRED COMPONENTS mpi serialization)
 
 find_package(PkgConfig REQUIRED) # Get pkg_check_modules.
-pkg_check_modules(PETSc REQUIRED PETSc>=3.8.3)
-pkg_check_modules(SLEPc REQUIRED SLEPc>=3.8.1)
+pkg_check_modules(PETSc REQUIRED PETSc>=3.10.3)
+pkg_check_modules(SLEPc REQUIRED SLEPc>=3.10.1)
 
 find_package(PythonInterp REQUIRED)
 
