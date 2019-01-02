@@ -1389,7 +1389,7 @@ string getConvergedReason(KSPConvergedReason const & pcReason) {
   if (pcReason == KSP_DIVERGED_INDEFINITE_PC   ) reason = "KSP_DIVERGED_INDEFINITE_PC";
   if (pcReason == KSP_DIVERGED_NANORINF        ) reason = "KSP_DIVERGED_NANORINF";
   if (pcReason == KSP_DIVERGED_INDEFINITE_MAT  ) reason = "KSP_DIVERGED_INDEFINITE_MAT";
-  if (pcReason == KSP_DIVERGED_PCSETUP_FAILED  ) reason = "KSP_DIVERGED_PCSETUP_FAILED";
+  if (pcReason == KSP_DIVERGED_PC_FAILED       ) reason = "KSP_DIVERGED_PC_FAILED";
 
   return reason;
 }
