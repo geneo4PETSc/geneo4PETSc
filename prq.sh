@@ -33,9 +33,10 @@ do
   if [[ "$OPT" == "openmpi" ]]; then
     if [[ -f "${PRQ_DIR}/local/bin/mpirun" ]]; then echo "done."; continue; fi
 
-    if [[ ! -f openmpi-1.8.5.tar.gz ]]; then wget https://www.open-mpi.org/software/ompi/v1.8/downloads/openmpi-1.8.5.tar.gz; fi
-    tar -xf openmpi-1.8.5.tar.gz
-    pushd openmpi-1.8.5
+    # Note: this must be/stay consistent with petsc mpi (<petsc-root>/config/BuildSystem/config/packages/OpenMPI.py).
+    if [[ ! -f openmpi-3.0.1.tar.gz ]]; then wget https://www.open-mpi.org/software/ompi/v3.0/downloads/openmpi-3.0.1.tar.gz; fi
+    tar -xf openmpi-3.0.1.tar.gz
+    pushd openmpi-3.0.1
 
     echo -e "\\nconfiguring..."
     ./configure --prefix="${PRQ_DIR}/local" --with-devel-headers --enable-mpi-cxx --enable-mpi-fortran &> prq.openmpi.configure.log
@@ -50,6 +51,7 @@ do
   elif [[ "$OPT" == "boost" ]]; then
     if [[ -f "${PRQ_DIR}/local/lib/libboost_mpi.a" ]]; then echo "done."; continue; fi
 
+    # Note: this must be/stay consistent with petsc boost (<petsc-root>/config/BuildSystem/config/packages/boost.py).
     if [[ ! -f boost_1_61_0.tar.gz ]]; then wget https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.gz; fi
     tar -xf boost_1_61_0.tar.gz
     pushd boost_1_61_0
