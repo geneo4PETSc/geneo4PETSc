@@ -81,8 +81,8 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install wget gzip tar;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install git;                                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gfortran gcc g++ libc++-dev;               fi
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi # compiled, not installed.
-# - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi # compiled, not installed.
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install openmpi-bin openmpi-common libopenmpi-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libboost-mpi-dev;                          fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install liblapack-dev;                             fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cmake;                                     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install autoconf automake;                         fi
