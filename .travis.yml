@@ -88,7 +88,8 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install autoconf automake;                         fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install diffutils findutils;                       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libbz2-dev;                                fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal python-tk;                  fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal  python-tk  python-pip;     fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python3-minimal python3-tk python3-pip;    fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install wget gzip              || true; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install git                    || true; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install gcc                    || true; fi
@@ -104,7 +105,12 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then ls -al /usr/local/opt/python@2/bin/python*;                                         fi # PETSc / SLEPc don't support python3.
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then sudo ln -fs /usr/local/opt/python@2/bin/python2 /usr/local/opt/python@2/bin/python; fi # PETSc / SLEPc don't support python3.
   - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then export PATH="/usr/local/opt/python@2/bin:$PATH";                                    fi # PETSc / SLEPc don't support python3.
-  - sudo pip install --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib # Same command for linux / osx.
+
+  # python: install from pip.
+  - sudo pip  install --ignore-installed --upgrade                                   pip
+  - sudo pip  install --ignore-installed --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib
+  - sudo pip3 install --ignore-installed --upgrade                                   pip
+  - sudo pip3 install --ignore-installed --upgrade --upgrade-strategy only-if-needed argparse numpy matplotlib
 
   # code quality: install checkers.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install cppcheck shellcheck; sudo pip install pylint; fi
