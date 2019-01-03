@@ -48,13 +48,6 @@ matrix:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && FC=gfortran-7"
       python: 3.3
 
-    # Mac OS.
-    - os: osx
-      sudo: required
-      env:
-        - MATRIX_EVAL="CC=cc && CXX=c++ && FC=gfortran"
-      python: 2.7
-
 virtualenv:
 
   # system_site_packages is needed for pip to be allowed to install packages in the system
@@ -70,11 +63,6 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get                                                                 update;       fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" upgrade;      fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" dist-upgrade; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    cask uninstall oclint || true;                                     fi # conflicts with gcc.
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    update                || true;                                     fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    upgrade               || true;                                     fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    list -1 | while read line; do brew unlink             $line; done; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    list -1 | while read line; do brew   link --overwrite $line; done; fi
 
   # packages: install from repositories.
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libc-dev;                                  fi
@@ -90,21 +78,6 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libbz2-dev;                                fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python-minimal  python-tk  python-pip;     fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install python3-minimal python3-tk python3-pip;    fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install wget gzip              || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install git                    || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install gcc                    || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install openmpi                || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install boost-mpi              || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install lapack                 || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install cmake                  || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install autoconf automake      || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install diffutils findutils    || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install bzip2                  || true; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    install python@2 --with-tcl-tk || true;                                fi # PETSc / SLEPc don't support python3.
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then      brew    link --overwrite --force python@2;                                     fi # PETSc / SLEPc don't support python3.
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then ls -al /usr/local/opt/python@2/bin/python*;                                         fi # PETSc / SLEPc don't support python3.
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then sudo ln -fs /usr/local/opt/python@2/bin/python2 /usr/local/opt/python@2/bin/python; fi # PETSc / SLEPc don't support python3.
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then export PATH="/usr/local/opt/python@2/bin:$PATH";                                    fi # PETSc / SLEPc don't support python3.
 
   # python: install from pip.
   - sudo pip  install --ignore-installed --upgrade                                   pip
@@ -120,7 +93,6 @@ before_script:
   # start X server to enable matplotlib to create images.
   - export DISPLAY=":99.0"
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sh -e /etc/init.d/xvfb start;                fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   ]]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; )& fi
 
 script:
 
@@ -146,11 +118,6 @@ script:
   - export LD_LIBRARY_PATH="$TRAVIS_BUILD_DIR/prq/local/lib:${LD_LIBRARY_PATH}"
   - export PKG_CONFIG_PATH="$TRAVIS_BUILD_DIR/prq/local/lib/pkgconfig:${PKG_CONFIG_PATH}"
   - export CMAKE_PREFIX_PATH="$TRAVIS_BUILD_DIR/prq/local:${CMAKE_PREFIX_PATH}"
-
-  # tweak cmake on OSX (builds are slow: kill tests or get killed => keep only the first "dummy" test case).
-  - pushd $TRAVIS_BUILD_DIR
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' -e 's/^add_test/#add_test/' ./tst/laplacian/CMakeLists.txt; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sed -i '' -e 's/^add_test/#add_test/' ./tst/graph/CMakeLists.txt;     fi
 
   # build and test.
   - pushd $TRAVIS_BUILD_DIR
